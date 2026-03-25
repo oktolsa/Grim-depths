@@ -44,13 +44,13 @@ func _setup_spawn_timer() -> void:
 	spawn_timer.start()
 
 func _on_difficulty_changed(level: int) -> void:
-	# С каждыми 30 секундами спавн ускоряется на 10%
-	var new_interval = GameManager.BASE_SPAWN_INTERVAL * pow(0.90, level - 1)
-	spawn_timer.wait_time = max(0.2, new_interval)
+	# С каждыми 30 секундами спавн ускоряется на 5% (было 10%)
+	var new_interval = GameManager.BASE_SPAWN_INTERVAL * pow(0.95, level - 1)
+	spawn_timer.wait_time = max(0.4, new_interval) # Увеличен минимальный предел
 	
-	# Босс спавнится каждые 2 минуты = 4 уровня (уровень меняется раз в 30 сек)
-	# То есть на 5 (2 мин), 9 (4 мин), 13 (6 мин) уровнях.
-	if level > 1 and (level - 1) % 4 == 0 and boss_scene:
+	# Босс спавнится каждые 3 минуты = 6 уровней
+	# Первый босс появится на уровне 7 (ровно через 3 минуты)
+	if level > 1 and (level - 1) % 6 == 0 and boss_scene:
 		_spawn_boss()
 
 func _spawn_boss() -> void:
@@ -75,14 +75,14 @@ func _on_spawn_timer_timeout() -> void:
 	if _player and is_instance_valid(_player):
 		# Агрессивный рост количества врагов
 		var spawn_count = 1
-		if GameManager.difficulty_level >= 3: # 1 мин
+		if GameManager.difficulty_level >= 5: # 2 мин
 			spawn_count = 2
-		if GameManager.difficulty_level >= 7: # 3 мин
+		if GameManager.difficulty_level >= 9: # 4 мин
 			spawn_count = 3
 		if GameManager.difficulty_level >= 13: # 6 мин
 			spawn_count = 4
 		if GameManager.difficulty_level >= 19: # 9 мин
-			spawn_count = 6
+			spawn_count = 5 # Слегка уменьшим максимум
 		
 		for i in range(spawn_count):
 			_spawn_enemy()

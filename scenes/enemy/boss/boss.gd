@@ -40,8 +40,8 @@ func _handle_attack() -> void:
 	if not can_attack or not is_instance_valid(GameManager.player):
 		return
 		
-	# Boss is large (radius ~168), attack range ~200 pixels (squared: 40000.0)
-	if global_position.distance_squared_to(GameManager.player.global_position) < 40000.0:
+	# Boss is large (radius ~136), attack range ~150 pixels (squared: 22500.0)
+	if global_position.distance_squared_to(GameManager.player.global_position) < 22500.0:
 		if GameManager.player.has_method("take_damage"):
 			GameManager.player.take_damage(contact_damage)
 			can_attack = false
@@ -60,8 +60,38 @@ func _die() -> void:
 	var main = get_tree().current_scene as Main
 	if main and is_instance_valid(main) and main._current_boss == self:
 		main.hide_boss_ui()
-		
+	
+	# Звук убийства босса + эпическая тряска камеры
+	_on_boss_kill_effects()
+	
 	super._die()
+
+func _on_boss_kill_effects() -> void:
+	# Воспроизводим звук победы над боссом
+	if get_node_or_null("/root/AudioManager"):
+		AudioManager.play_kill_boss()
+	
+	# Эпическая тряска экрана — нарастающая волнами (как в Minecraft дракон)
+	var player = GameManager.player
+	if player and player.has_method("camera_shake"):
+		# Серия встрясок разной интенсивности через таймеры
+		player.camera_shake(20.0, 0.4)
+		var t1 = get_tree().create_timer(0.45)
+		t1.timeout.connect(func():
+			if is_instance_valid(player): player.camera_shake(30.0, 0.5)
+		)
+		var t2 = get_tree().create_timer(1.0)
+		t2.timeout.connect(func():
+			if is_instance_valid(player): player.camera_shake(25.0, 0.6)
+		)
+		var t3 = get_tree().create_timer(1.7)
+		t3.timeout.connect(func():
+			if is_instance_valid(player): player.camera_shake(15.0, 0.8)
+		)
+		var t4 = get_tree().create_timer(2.6)
+		t4.timeout.connect(func():
+			if is_instance_valid(player): player.camera_shake(8.0, 1.0)
+		)
 
 func _spawn_experience_gem(pos: Vector2) -> void:
 	# Босс роняет "уровень" (огромный гем или несколько)

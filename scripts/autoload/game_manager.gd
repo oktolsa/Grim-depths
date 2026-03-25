@@ -7,6 +7,7 @@ signal currency_changed(amount: int)
 signal boss_spawned(boss_name: String, max_hp: float)
 signal boss_health_changed(current_hp: float, max_hp: float)
 signal boss_died
+signal mobile_settings_changed
  
 ## Размер игрового мира (для границ и спавна)
 const WORLD_SIZE: float = 5000.0
@@ -22,9 +23,9 @@ var enemy_damage_multiplier: float = 1.0
 var enemy_speed_multiplier: float = 1.0
 
 ## Прирост характеристик за уровень сложности
-const HP_INCREASE_PER_LEVEL: float = 0.08
-const DAMAGE_INCREASE_PER_LEVEL: float = 0.05
-const SPEED_INCREASE_PER_LEVEL: float = 0.02
+const HP_INCREASE_PER_LEVEL: float = 0.05
+const DAMAGE_INCREASE_PER_LEVEL: float = 0.04
+const SPEED_INCREASE_PER_LEVEL: float = 0.015
 
 ## Базовый интервал спавна
 const BASE_SPAWN_INTERVAL: float = 2.8
@@ -40,6 +41,17 @@ var kills: int = 0
 ## Currency and Progression
 var soul_shards: int = 0
 var talents: Dictionary = {}
+var current_language: String = "en"
+
+# Mobile Settings
+var mobile_swap_controls: bool = false
+var mobile_controls_opacity: float = 0.8
+var mobile_joystick_scale: float = 1.0
+
+# Audio Settings
+var audio_music_volume: float = 0.8
+var audio_sfx_volume: float = 1.0
+
 const SAVE_PATH: String = "user://savegame.save"
 
 var player: Node
@@ -50,28 +62,66 @@ func _ready() -> void:
 	load_game()
 
 func _setup_translations() -> void:
+	# Russian Translation
 	var ru = Translation.new()
 	ru.locale = "ru"
-	var strings = {
+	var ru_strings = {
+		# General
 		"SETTINGS": "НАСТРОЙКИ",
-		"Master Volume": "Общая громкость",
-		"SFX Volume": "Громкость эффектов",
-		"Window Mode": "Режим экрана",
-		"Resolution": "Разрешение",
-		"Language": "Язык",
-		"Windowed": "В окне",
-		"Fullscreen": "На весь экран",
 		"BACK": "НАЗАД",
-		"Audio": "Аудио",
-		"Display": "Экран",
-		
-		"START EXPEDITION": "НАЧАТЬ ЭКСПЕДИЦИЮ",
-		"CHARACTER TALENTS": "ТАЛАНТЫ ПЕРСОНАЖА",
 		"OPTIONS": "НАСТРОЙКИ",
-		"EXIT TO DESKTOP": "ВЫХОД",
 		"GRIM DEPTHS": "МРАЧНЫЕ ГЛУБИНЫ",
+		
+		# Main Menu
+		"START EXPEDITION": "НАЧАТЬ ПОХОД",
+		"CHARACTER TALENTS": "ТАЛАНТЫ",
+		"EXIT TO DESKTOP": "ВЫХОД",
 		"Soul Shards:": "Осколки душ:",
 		
+		# Settings
+		"Audio": "Аудио",
+		"Controls": "Управление",
+		"Language": "Язык",
+		"Master Volume": "Общая громкость",
+		"Music Volume": "Громкость музыки",
+		"SFX Volume": "Громкость звуков",
+		"Swap Layout": "Поменять местами",
+		"Mirrored": "Инверсия",
+		"Right-handed": "Правша (инверсия)",
+		"Controls Opacity": "Прозрачность кнопок",
+		"Joystick Scale": "Размер джойстика",
+		"Window Mode": "Режим экрана",
+		"Resolution": "Разрешение",
+		"Windowed": "В окне",
+		"Fullscreen": "На весь экран",
+		
+		# In-Game
+		"PAUSE": "ПАУЗА",
+		"PAUSED": "ПАУЗА",
+		"RESUME": "ПРОДОЛЖИТЬ",
+		"RESTART": "ЗАНОВО",
+		"MAIN MENU": "В МЕНЮ",
+		"RETURN TO HUB": "В ХАБ",
+		"GAME OVER": "ИГРА ОКОНЧЕНА",
+		"THE DEPTHS CLAIMED YOU": "БЕЗДНА ПОГЛОТИЛА ВАС",
+		"VICTORY": "ПОБЕДА",
+		"YOU SURVIVED!": "ВЫ ВЫЖИЛИ!",
+		"RETRY EXPEDITION": "ПОВТОРИТЬ ПОХОД",
+		"RESUME EXPEDITION": "ПРОДОЛЖИТЬ ПОХОД",
+		
+		"Time:": "Время:",
+		"Kills:": "Убийства:",
+		"Level %d": "Уровень %d",
+		"LEVEL UP!": "НОВЫЙ УРОВЕНЬ!",
+		"Choose your reward:": "Выберите награду:",
+		
+		# Results
+		"RESULTS:": "РЕЗУЛЬТАТЫ:",
+		"Survival Time:": "Время выживания:",
+		"Player Level:": "Уровень игрока:",
+		"Total Kills:": "Всего убийств:",
+		
+		# Upgrades
 		"Speed Boost": "Ускорение",
 		"Aura Power": "Сила ауры",
 		"Aura Expansion": "Радиус ауры",
@@ -90,9 +140,25 @@ func _setup_translations() -> void:
 		"Upgrade 2": "Улучшение 2",
 		"Upgrade 3": "Улучшение 3"
 	}
-	for key in strings:
-		ru.add_message(key, strings[key])
+	for key in ru_strings:
+		ru.add_message(key, ru_strings[key])
 	TranslationServer.add_translation(ru)
+	
+	# English Translation (Self-mapping for clarity and fallback)
+	var en = Translation.new()
+	en.locale = "en"
+	var en_strings = {
+		# Terminology change: Expedition -> Expedition (keep consistent as keys)
+		"START EXPEDITION": "START EXPEDITION",
+		"RETRY EXPEDITION": "RETRY EXPEDITION",
+		"RESUME EXPEDITION": "RESUME EXPEDITION"
+	}
+	for key in en_strings:
+		en.add_message(key, en_strings[key])
+	TranslationServer.add_translation(en)
+	
+	# Set default to English
+	TranslationServer.set_locale("en")
 
 func reset() -> void:
 	difficulty_level = 1
@@ -105,11 +171,11 @@ func increase_difficulty() -> void:
 	difficulty_level += 1
 	# Нелинейный рост, откалиброванный для идеального баланса
 	enemy_hp_multiplier = 1.0 + (difficulty_level - 1) * HP_INCREASE_PER_LEVEL
-	# Урон растет чуть агрессивнее после 5 уровня
-	var damage_accel = 1.0 if difficulty_level < 5 else 1.2
+	# Урон растет чуть агрессивнее после 14 уровня (6.5 минут)
+	var damage_accel = 1.0 if difficulty_level < 14 else 1.25
 	enemy_damage_multiplier = 1.0 + (difficulty_level - 1) * DAMAGE_INCREASE_PER_LEVEL * damage_accel
-	# Скорость растет плавно, достигая значимых величин к 10 минуте
-	enemy_speed_multiplier = 1.0 + (difficulty_level - 1) * SPEED_INCREASE_PER_LEVEL * 0.8
+	# Скорость растет очень плавно
+	enemy_speed_multiplier = 1.0 + (difficulty_level - 1) * SPEED_INCREASE_PER_LEVEL
 	difficulty_changed.emit(difficulty_level)
 
 func register_player(new_player: Node):
@@ -119,9 +185,9 @@ func register_player(new_player: Node):
 func register_aura(new_aura: Node):
 	aura = new_aura
 	if aura:
-		aura.aura_radius = 45.0 # Маленький радиус на старте
-		aura.damage = 18.0      # Быстрее убиваем первых скелетов
-		aura.attack_interval = 1.15
+		aura.aura_radius = 60.0 # Увеличен радиус на старте
+		aura.damage = 26.0      # Теперь убиваем скелетов за 2 удара вместо 3
+		aura.attack_interval = 1.0 # Бьем чуть чаще
 	apply_talents_to_aura()
 
 func get_random_upgrades(count: int) -> Array:
@@ -197,6 +263,18 @@ func apply_upgrade(upgrade: Dictionary):
 			if player:
 				player.collection_radius += upgrade["value"]
 
+func set_language(locale: String) -> void:
+	current_language = locale
+	TranslationServer.set_locale(locale)
+	save_game()
+
+func update_mobile_settings(swap: bool, opacity: float, scale: float) -> void:
+	mobile_swap_controls = swap
+	mobile_controls_opacity = opacity
+	mobile_joystick_scale = scale
+	mobile_settings_changed.emit()
+	save_game()
+
 func trigger_game_over() -> void:
 	game_over.emit()
 
@@ -220,7 +298,13 @@ func save_game() -> void:
 	if file:
 		var data = {
 			"soul_shards": soul_shards,
-			"talents": talents
+			"talents": talents,
+			"language": current_language,
+			"mobile_swap": mobile_swap_controls,
+			"mobile_opacity": mobile_controls_opacity,
+			"mobile_scale": mobile_joystick_scale,
+			"audio_music_volume": audio_music_volume,
+			"audio_sfx_volume": audio_sfx_volume
 		}
 		file.store_string(JSON.stringify(data))
 
@@ -235,6 +319,13 @@ func load_game() -> void:
 		if data:
 			soul_shards = int(data.get("soul_shards", 0))
 			talents = data.get("talents", {})
+			current_language = data.get("language", "en")
+			mobile_swap_controls = data.get("mobile_swap", false)
+			mobile_controls_opacity = data.get("mobile_opacity", 0.8)
+			mobile_joystick_scale = data.get("mobile_scale", 1.0)
+			audio_music_volume = data.get("audio_music_volume", 0.8)
+			audio_sfx_volume = data.get("audio_sfx_volume", 1.0)
+			TranslationServer.set_locale(current_language)
 
 func unlock_talent(talent_id: String, cost: int) -> bool:
 	if talents.has(talent_id):

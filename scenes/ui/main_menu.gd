@@ -10,6 +10,25 @@ func _ready() -> void:
 		GameManager.currency_changed.connect(_on_currency_changed)
 	
 	_setup_button_animations()
+	_localize_ui()
+
+func _localize_ui() -> void:
+	# Localize Title
+	var title = find_child("TitleLabel")
+	if title: title.text = tr("GRIM DEPTHS")
+	
+	# Localize Buttons
+	var play_btn = find_child("PlayButton")
+	if play_btn: play_btn.text = tr("START EXPEDITION")
+	
+	var talents_btn = find_child("TalentsButton")
+	if talents_btn: talents_btn.text = tr("CHARACTER TALENTS")
+	
+	var settings_btn = find_child("SettingsButton")
+	if settings_btn: settings_btn.text = tr("OPTIONS")
+	
+	var exit_btn = find_child("ExitButton")
+	if exit_btn: exit_btn.text = tr("EXIT TO DESKTOP")
 
 func _setup_button_animations() -> void:
 	var buttons = find_children("*", "Button", true)

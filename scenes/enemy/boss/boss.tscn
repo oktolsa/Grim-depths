@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bv8gq7kxj5o2m" path="res://scenes/experience_gem/experience_gem.tscn" id="3_gem"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_boss"]
-radius = 42.0
+radius = 34.0
 
 [sub_resource type="Animation" id="Animation_walk"]
 resource_name = "walk"
@@ -52,9 +52,9 @@ collision_mask = 1
 script = ExtResource("1_script")
 experience_gem_scene = ExtResource("3_gem")
 experience_value = 1000
-base_max_hp = 3500.0
+base_max_hp = 2000.0
 base_speed = 45.0
-base_contact_damage = 30.0
+base_contact_damage = 20.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_boss")

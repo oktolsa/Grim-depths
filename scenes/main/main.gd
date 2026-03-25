@@ -23,7 +23,7 @@ var is_game_active: bool = true
 @onready var experience_bar: ProgressBar = $UI/ExperienceBar
 @onready var kill_label: Label = $UI/TopBar/KillLabel
 @onready var game_over_panel: Panel = $UI/GameOverPanel
-@onready var result_stats_label: Label = $UI/GameOverPanel/VBoxContainer/ResultStats
+@onready var result_stats_label: RichTextLabel = $UI/GameOverPanel/VBoxContainer/StatsFrame/ResultStats
 @onready var pause_panel: Panel = $UI/PausePanel
 @onready var resume_button: Button = $UI/PausePanel/VBoxContainer/ResumeButton
 @onready var pause_settings_button: Button = $UI/PausePanel/VBoxContainer/SettingsButton
@@ -41,12 +41,42 @@ var _player: Node2D
 var _current_boss: Boss = null
 var current_upgrades: Array = []
 
+# Mobile nodes references
+var _joystick: Control
+var _dash_btn: Button
+var _pause_btn: Button
+
 func _ready() -> void:
 	_setup_game()
 	_connect_signals()
 	_spawn_player()
 	_spawn_initial_potions(150) # Раскидываем 150 зелий по миру
 	_setup_mobile_controls()
+	_localize_game_ui()
+
+func _localize_game_ui() -> void:
+	# Pause menu
+	var pause_lbl = find_child("PauseLabel")
+	if pause_lbl: pause_lbl.text = tr("PAUSED")
+	if resume_button: resume_button.text = tr("RESUME EXPEDITION")
+	if pause_settings_button: pause_settings_button.text = tr("OPTIONS")
+	if pause_main_menu_button: pause_main_menu_button.text = tr("RETURN TO HUB")
+	
+	# Upgrade panel
+	var lvl_up_lbl = find_child("LevelUpLabel")
+	if lvl_up_lbl: lvl_up_lbl.text = tr("LEVEL UP!")
+	var choose_lbl = find_child("ChooseLabel")
+	if choose_lbl: choose_lbl.text = tr("Choose your reward:")
+	
+	# Game Over panel
+	var go_lbl = find_child("GameOverLabel")
+	if go_lbl: go_lbl.text = tr("THE DEPTHS CLAIMED YOU")
+	var restart_btn = find_child("RestartButton")
+	if restart_btn: restart_btn.text = tr("RETRY EXPEDITION")
+	var mm_btn = find_child("MainMenuButton", true, false) # There are two, find the one in GameOverPanel
+	# Specifically target buttons by their full path if possible or context
+	$UI/GameOverPanel/VBoxContainer/RestartButton.text = tr("RETRY EXPEDITION")
+	$UI/GameOverPanel/VBoxContainer/MainMenuButton.text = tr("RETURN TO HUB")
 
 func _setup_game() -> void:
 	get_tree().paused = false
@@ -72,6 +102,7 @@ func _connect_signals() -> void:
 	GameManager.boss_spawned.connect(_on_boss_spawned)
 	GameManager.boss_health_changed.connect(_on_boss_health_changed)
 	GameManager.boss_died.connect(_on_boss_died)
+	GameManager.mobile_settings_changed.connect(_apply_mobile_settings)
 
 func _spawn_player() -> void:
 	if not player_scene:
@@ -166,11 +197,11 @@ func _setup_ui_animations() -> void:
 			btn.item_rect_changed.connect(func(): btn.pivot_offset = btn.size / 2.0)
 
 func _on_button_hover(btn: Button) -> void:
-	var tween = create_tween()
+	var tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(btn, "scale", Vector2(1.05, 1.05), 0.1).set_trans(Tween.TRANS_SINE)
 
 func _on_button_unhover(btn: Button) -> void:
-	var tween = create_tween()
+	var tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_SINE)
 
 func _on_game_timer_timeout() -> void:
@@ -184,14 +215,14 @@ func _on_game_timer_timeout() -> void:
 func _update_time_display() -> void:
 	var minutes := int(game_time) / 60
 	var seconds := int(game_time) % 60
-	time_label.text = "Time: %02d:%02d" % [minutes, seconds]
+	time_label.text = "%s %02d:%02d" % [tr("Time:"), minutes, seconds]
 
 func _update_kill_display() -> void:
 	if kill_label:
-		kill_label.text = "Kills: %d" % GameManager.kills
+		kill_label.text = "%s %d" % [tr("Kills:"), GameManager.kills]
 
 func _update_difficulty_display() -> void:
-	difficulty_label.text = "Lvl %d" % GameManager.difficulty_level
+	difficulty_label.text = tr("Level %d") % GameManager.difficulty_level
 
 func _on_difficulty_timer_timeout() -> void:
 	if not is_game_active:
@@ -204,12 +235,12 @@ func _on_difficulty_changed(_level: int) -> void:
 
 func _on_player_health_changed(current_hp: float, max_hp: float) -> void:
 	health_bar.max_value = max_hp
-	var tween = create_tween()
+	var tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(health_bar, "value", current_hp, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _on_player_experience_changed(current_exp: int, target_exp: int) -> void:
 	experience_bar.max_value = target_exp
-	var tween = create_tween()
+	var tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(experience_bar, "value", float(current_exp), 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _on_player_level_up(new_level: int) -> void:
@@ -232,9 +263,13 @@ func register_active_boss(boss: Boss):
 	_current_boss = boss
 
 func _on_boss_health_changed(current_hp: float, max_hp: float) -> void:
-	# Если сигнал пришел не от текущего "главного" босса, игнорируем
-	# (этот способ проще чем передавать ссылку в сигнале)
-	pass
+	if boss_health_container.visible:
+		update_boss_health_ui(current_hp, max_hp)
+
+func _on_boss_died() -> void:
+	# Ждем немного перед скрытием UI (эффект смерти)
+	var timer := get_tree().create_timer(1.5)
+	timer.timeout.connect(hide_boss_ui)
 
 var _boss_health_tween: Tween
 
@@ -245,17 +280,12 @@ func update_boss_health_ui(current_hp: float, max_hp: float):
 	_boss_health_tween = create_tween()
 	_boss_health_tween.tween_property(boss_health_bar, "value", current_hp, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-func _on_boss_died() -> void:
-	# UI скрываем только если умер "главный" босс
-	# В _ready босса мы должны будем сделать более хитрую регистрацию
-	pass
-
 func hide_boss_ui():
 	boss_health_container.visible = false
 	_current_boss = null
 
 func _show_upgrade_panel(new_level: int) -> void:
-	new_level_label.text = "Level %d" % new_level
+	new_level_label.text = tr("Level %d") % new_level
 	upgrade_panel.visible = true
 	get_tree().paused = true
 	
@@ -263,19 +293,19 @@ func _show_upgrade_panel(new_level: int) -> void:
 	current_upgrades = upgrades
 	
 	if upgrades.size() > 0:
-		upgrade_button_1.text = "%s\n%s" % [upgrades[0]["name"], upgrades[0]["description"]]
+		upgrade_button_1.text = "%s\n%s" % [tr(upgrades[0]["name"]), tr(upgrades[0]["description"])]
 		upgrade_button_1.visible = true
 	else:
 		upgrade_button_1.visible = false
 		
 	if upgrades.size() > 1:
-		upgrade_button_2.text = "%s\n%s" % [upgrades[1]["name"], upgrades[1]["description"]]
+		upgrade_button_2.text = "%s\n%s" % [tr(upgrades[1]["name"]), tr(upgrades[1]["description"])]
 		upgrade_button_2.visible = true
 	else:
 		upgrade_button_2.visible = false
 		
 	if upgrades.size() > 2:
-		upgrade_button_3.text = "%s\n%s" % [upgrades[2]["name"], upgrades[2]["description"]]
+		upgrade_button_3.text = "%s\n%s" % [tr(upgrades[2]["name"]), tr(upgrades[2]["description"])]
 		upgrade_button_3.visible = true
 	else:
 		upgrade_button_3.visible = false
@@ -299,16 +329,46 @@ func _on_player_died() -> void:
 
 func _on_game_over() -> void:
 	is_game_active = false
-	# Обновляем статистику на экране Game Over
+	# Статистика
 	var minutes := int(game_time) / 60
 	var seconds := int(game_time) % 60
 	var time_str = "%02d:%02d" % [minutes, seconds]
 	var player_lvl = _player.level if _player else 1
+	var kills_count = GameManager.kills
 	
-	result_stats_label.text = "RESULTS:\n\nSurvival Time: %s\nPlayer Level: %d\nTotal Kills: %d" % [time_str, player_lvl, GameManager.kills]
+	# Красивое форматирование результатов (используем BBCode)
+	result_stats_label.text = "[center][font_size=28][b]%s[/b][/font_size]\n\n" % tr("RESULTS:")
+	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%s[/b]\n" % [tr("Survival Time:"), time_str]
+	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b]\n" % [tr("Player Level:"), player_lvl]
+	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b][/center]" % [tr("Total Kills:"), kills_count]
 	
+	# Стилизация и анимация
+	_style_premium_panel(game_over_panel)
+	game_over_panel.modulate.a = 0.0
+	game_over_panel.scale = Vector2(0.9, 0.9)
 	game_over_panel.visible = true
+	
+	var tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.parallel().tween_property(game_over_panel, "modulate:a", 1.0, 0.4)
+	tween.parallel().tween_property(game_over_panel, "scale", Vector2(1.0, 1.0), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
 	get_tree().paused = true
+
+func _style_premium_panel(panel: Panel) -> void:
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.15, 0.9) # Dark blue-grey
+	style.border_width_left = 4
+	style.border_width_top = 4
+	style.border_width_right = 4
+	style.border_width_bottom = 4
+	style.border_color = Color(0.8, 0.6, 0.2, 0.8) # Gold border
+	style.corner_radius_top_left = 20
+	style.corner_radius_top_right = 20
+	style.corner_radius_bottom_left = 20
+	style.corner_radius_bottom_right = 20
+	style.shadow_color = Color(0, 0, 0, 0.7)
+	style.shadow_size = 30
+	panel.add_theme_stylebox_override("panel", style)
 
 func restart_game() -> void:
 	get_tree().paused = false
@@ -319,27 +379,109 @@ func go_to_main_menu() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
 func _setup_mobile_controls() -> void:
-	# Добавляем джойстик в левый нижний угол
-	var joystick = Control.new()
-	joystick.set_script(load("res://scenes/ui/joystick.gd"))
-	joystick.custom_minimum_size = Vector2(200, 200)
-	joystick.size = Vector2(200, 200)
-	var viewport_height = get_viewport_rect().size.y
-	joystick.position = Vector2(100, viewport_height - 300)
-	ui_layer.add_child(joystick)
+	# Скрываем мобильное управление на ПК, если не включена эмуляция
+	var is_mobile = OS.has_feature("mobile") or ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse")
+	if not is_mobile:
+		return
+
+	# Добавляем джойстик
+	_joystick = Control.new()
+	_joystick.set_script(load("res://scenes/ui/joystick.gd"))
+	_joystick.custom_minimum_size = Vector2(200, 200)
+	_joystick.size = Vector2(200, 200)
+	ui_layer.add_child(_joystick)
 	
-	# Добавляем кнопку паузы в правый верхний угол
-	var pause_btn = Button.new()
-	pause_btn.text = "||"
-	pause_btn.name = "MobilePauseButton"
-	pause_btn.custom_minimum_size = Vector2(80, 80)
-	pause_btn.size = Vector2(80, 80)
-	pause_btn.position = Vector2(get_viewport_rect().size.x - 120, 30)
-	pause_btn.focus_mode = Control.FOCUS_NONE
-	pause_btn.action_mode = Button.ACTION_MODE_BUTTON_PRESS
-	pause_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	pause_btn.pressed.connect(func(): _toggle_pause())
-	ui_layer.add_child(pause_btn)
+	# Добавляем кнопку рывка (Dash)
+	_dash_btn = Button.new()
+	_dash_btn.text = "DASH"
+	_dash_btn.name = "MobileDashButton"
+	_dash_btn.custom_minimum_size = Vector2(120, 120)
+	_dash_btn.size = Vector2(120, 120)
+	_dash_btn.focus_mode = Control.FOCUS_NONE
+	_dash_btn.action_mode = Button.ACTION_MODE_BUTTON_PRESS
+	
+	# Стилизация кнопки
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(1, 1, 1, 0.2)
+	style.corner_radius_top_left = 60
+	style.corner_radius_top_right = 60
+	style.corner_radius_bottom_left = 60
+	style.corner_radius_bottom_right = 60
+	style.border_width_left = 4
+	style.border_width_top = 4
+	style.border_width_right = 4
+	style.border_width_bottom = 4
+	style.border_color = Color(1, 1, 1, 0.4)
+	
+	var style_pressed = style.duplicate()
+	style_pressed.bg_color = Color(1, 1, 1, 0.4)
+	
+	_dash_btn.add_theme_stylebox_override("normal", style)
+	_dash_btn.add_theme_stylebox_override("hover", style)
+	_dash_btn.add_theme_stylebox_override("pressed", style_pressed)
+	_dash_btn.add_theme_color_override("font_color", Color.WHITE)
+	_dash_btn.add_theme_font_size_override("font_size", 24)
+	
+	_dash_btn.pivot_offset = Vector2(60, 60)
+	_dash_btn.pressed.connect(func(): 
+		var tween = create_tween()
+		tween.tween_property(_dash_btn, "scale", Vector2(0.9, 0.9) * GameManager.mobile_joystick_scale, 0.05)
+		tween.tween_property(_dash_btn, "scale", Vector2(1.0, 1.0) * GameManager.mobile_joystick_scale, 0.05)
+		
+		Input.action_press("ui_accept")
+		await get_tree().create_timer(0.1).timeout
+		Input.action_release("ui_accept")
+	)
+	ui_layer.add_child(_dash_btn)
+	
+	# Добавляем кнопку паузы
+	_pause_btn = Button.new()
+	_pause_btn.text = "||"
+	_pause_btn.name = "MobilePauseButton"
+	_pause_btn.custom_minimum_size = Vector2(80, 80)
+	_pause_btn.size = Vector2(80, 80)
+	_pause_btn.focus_mode = Control.FOCUS_NONE
+	_pause_btn.action_mode = Button.ACTION_MODE_BUTTON_PRESS
+	_pause_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_pause_btn.pressed.connect(func(): _toggle_pause())
+	ui_layer.add_child(_pause_btn)
+	
+	_apply_mobile_settings()
+
+func _apply_mobile_settings() -> void:
+	if not _joystick or not is_instance_valid(_joystick):
+		return
+		
+	var viewport_size = get_viewport_rect().size
+	var is_swapped = GameManager.mobile_swap_controls
+	var opacity = GameManager.mobile_controls_opacity
+	var scale = GameManager.mobile_joystick_scale
+	
+	# Position Joystick
+	if is_swapped:
+		# Swapped: Joystick is on the RIGHT
+		_joystick.position = Vector2(viewport_size.x - 300 * scale, viewport_size.y - 300 * scale)
+	else:
+		# Normal: Joystick is on the LEFT
+		_joystick.position = Vector2(100, viewport_size.y - 300 * scale)
+	
+	_joystick.scale = Vector2(scale, scale)
+	_joystick.modulate.a = opacity
+	
+	# Position Dash Button
+	if is_swapped:
+		# Swapped: Dash is on the LEFT
+		_dash_btn.position = Vector2(100, viewport_size.y - 250 * scale)
+	else:
+		# Normal: Dash is on the RIGHT
+		_dash_btn.position = Vector2(viewport_size.x - 220, viewport_size.y - 250 * scale)
+		
+	_dash_btn.scale = Vector2(scale, scale)
+	_dash_btn.modulate.a = opacity
+	
+	# Position Pause Button (usually stay top right)
+	_pause_btn.position = Vector2(viewport_size.x - 120, 30)
+	_pause_btn.modulate.a = opacity
 
 func _unhandled_input(event: InputEvent) -> void:
 	var is_escape = false

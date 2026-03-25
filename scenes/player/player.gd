@@ -154,6 +154,9 @@ func take_damage(amount: float) -> void:
 	_start_invincibility()
 	_show_damage_effect()
 	camera_shake(5.0, 0.5)
+	# Воспроизводим звук урона
+	if Engine.has_singleton("AudioManager") or get_node_or_null("/root/AudioManager"):
+		AudioManager.play_damage()
 	
 	if hp <= 0:
 		_die()

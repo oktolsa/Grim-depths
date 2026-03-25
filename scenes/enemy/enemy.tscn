@@ -7,8 +7,8 @@
 radius = 16.0
 
 [node name="Enemy" type="CharacterBody2D"]
-collision_layer = 3
-collision_mask = 1
+collision_layer = 4
+collision_mask = 5
 script = ExtResource("1_enemy")
 experience_gem_scene = ExtResource("2_gem")
 

@@ -14,15 +14,22 @@ func _ready() -> void:
 	# Скрываем на ПК, если не включена эмуляция
 	if not OS.has_feature("mobile") and not ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse"):
 		visible = false
-	
-	_joystick_center = global_position + size / 2.0
-	# Сброс позиции в центр
 	_stick_pos = Vector2.ZERO
 	queue_redraw()
+	# Пересчитываем центр после первого кадра
+	await get_tree().process_frame
+	_joystick_center = global_position + size / 2.0
+
+func _notification(what: int) -> void:
+	# Обновляем центр только при изменении размера контрола
+	if what == NOTIFICATION_RESIZED:
+		_joystick_center = global_position + size / 2.0
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
+			# Пересчитываем центр при каждом касании — позиция может сместиться
+			_joystick_center = global_position + size / 2.0
 			var dist = (event.position - _joystick_center).length()
 			if dist < joystick_radius * 2.0: # Увеличенная зона захвата
 				_is_dragging = true
@@ -42,31 +49,53 @@ func _update_stick(pos: Vector2) -> void:
 	var diff = pos - _joystick_center
 	var dist = diff.length()
 	
-	if dist > joystick_radius:
-		_stick_pos = diff.normalized() * joystick_radius
+	# Мертвая зона (deadzone), чтобы не было рывков в центре
+	var deadzone = 10.0
+	if dist < deadzone:
+		_stick_pos = Vector2.ZERO
+		_update_input_actions(Vector2.ZERO)
 	else:
-		_stick_pos = diff
+		if dist > joystick_radius:
+			_stick_pos = diff.normalized() * joystick_radius
+		else:
+			_stick_pos = diff
 		
-	_update_input_actions(_stick_pos / joystick_radius)
+		# Пересчитываем позицию с учетом мертвой зоны для плавного старта
+		var normalized_pos = (_stick_pos.length() - deadzone) / (joystick_radius - deadzone)
+		normalized_pos = max(0, normalized_pos)
+		_update_input_actions(_stick_pos.normalized() * normalized_pos)
+	
 	queue_redraw()
 
 func _update_input_actions(dir: Vector2) -> void:
-	# Превращаем вектор в нажатия кнопок для совместимости с существующей логикой
-	# Мы используем Input.action_press/release
+	# Используем силу нажатия (strength) для аналогового управления
+	# Это избавляет от рывков и позволяет двигаться медленнее или быстрее
 	
-	# Порог срабатывания
-	var threshold = 0.2
-	
-	_handle_action("move_right", dir.x > threshold)
-	_handle_action("move_left", dir.x < -threshold)
-	_handle_action("move_down", dir.y > threshold)
-	_handle_action("move_up", dir.y < -threshold)
+	# Горизонтальное движение
+	if dir.x > 0:
+		Input.action_press("move_right", dir.x)
+		Input.action_release("move_left")
+	elif dir.x < 0:
+		Input.action_press("move_left", -dir.x)
+		Input.action_release("move_right")
+	else:
+		Input.action_release("move_right")
+		Input.action_release("move_left")
+		
+	# Вертикальное движение
+	if dir.y > 0:
+		Input.action_press("move_down", dir.y)
+		Input.action_release("move_up")
+	elif dir.y < 0:
+		Input.action_press("move_up", -dir.y)
+		Input.action_release("move_down")
+	else:
+		Input.action_release("move_down")
+		Input.action_release("move_up")
 
 func _handle_action(action: String, is_pressed: bool) -> void:
-	if is_pressed:
-		Input.action_press(action, 1.0)
-	else:
-		Input.action_release(action)
+	# Этот метод больше не нужен, так как мы обрабатываем всё в _update_input_actions
+	pass
 
 func _draw() -> void:
 	# Рисуем основу джойстика

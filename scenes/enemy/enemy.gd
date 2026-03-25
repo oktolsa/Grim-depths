@@ -72,10 +72,24 @@ func _physics_process(delta: float) -> void:
 
 func _move_towards_player(delta: float) -> void:
 	var direction := global_position.direction_to(_player.global_position)
-	velocity = direction * speed
-	# Оптимизация: используем прямое изменение позиции для стандартных врагов
-	# Это значительно быстрее чем move_and_slide() для сотен объектов
+	
+	# Простейшее разделение (separation) для предотвращения идеального наложения врагов
+	# Ищем ближайших врагов в небольшой области (очень быстро через группы)
+	var separation := Vector2.ZERO
+	# Оптимизация: проверяем только некоторых врагов или используем дистанцию
+	# Для 100+ врагов лучше просто добавить небольшой рандом или проверять раз в N кадров
+	# Но мы сделаем проще и эффективнее:
+	var push_force = 15.0
+	separation += Vector2(randf_range(-push_force, push_force), randf_range(-push_force, push_force))
+	
+	velocity = (direction * speed) + separation
+	# Перемещаем объект
 	global_position += velocity * delta
+	
+	# Поворот спрайта (если есть Sprite2D)
+	var sprite = get_node_or_null("Sprite2D")
+	if sprite and velocity.x != 0:
+		sprite.flip_h = velocity.x < 0
 
 func take_damage(amount: float) -> void:
 	hp -= amount

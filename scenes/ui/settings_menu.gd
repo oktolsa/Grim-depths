@@ -3,145 +3,127 @@ class_name SettingsMenu
 
 signal back_pressed
 
-@onready var master_slider: HSlider = %MasterSlider
+@onready var music_slider: HSlider = %MusicSlider
 @onready var sfx_slider: HSlider = %SFXSlider
-@onready var mode_option: OptionButton = %ModeOptionButton
-@onready var resolution_option: OptionButton = %ResOptionButton
 @onready var lang_option: OptionButton = %LangOptionButton
-
-var master_bus_idx: int
-var sfx_bus_idx: int
+@onready var swap_button: CheckButton = %SwapButton
+@onready var opacity_slider: HSlider = %OpacitySlider
+@onready var joystick_slider: HSlider = %JoystickSlider
 
 func _ready() -> void:
-	master_bus_idx = AudioServer.get_bus_index("Master")
-	# If SFX bus doesn't exist, we create it
-	sfx_bus_idx = AudioServer.get_bus_index("SFX")
-	if sfx_bus_idx == -1:
-		AudioServer.add_bus()
-		var new_idx = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(new_idx, "SFX")
-		sfx_bus_idx = new_idx
 	_setup_ui()
-	
-	# Connect signals
-	if master_slider:
-		master_slider.value_changed.connect(_on_master_volume_changed)
+	_connect_signals()
+
+func _connect_signals() -> void:
+	if music_slider:
+		music_slider.value_changed.connect(_on_music_volume_changed)
 	if sfx_slider:
 		sfx_slider.value_changed.connect(_on_sfx_volume_changed)
-	if mode_option:
-		mode_option.item_selected.connect(_on_mode_selected)
-	if resolution_option:
-		resolution_option.item_selected.connect(_on_resolution_selected)
 	if lang_option:
 		lang_option.item_selected.connect(_on_lang_selected)
+	if swap_button:
+		swap_button.toggled.connect(_on_mobile_settings_changed)
+	if opacity_slider:
+		opacity_slider.value_changed.connect(_on_mobile_settings_changed)
+	if joystick_slider:
+		joystick_slider.value_changed.connect(_on_mobile_settings_changed)
 
 func _setup_ui() -> void:
-	# Volumes
-	if master_slider and master_bus_idx != -1:
-		master_slider.value = db_to_linear(AudioServer.get_bus_volume_db(master_bus_idx))
-	if sfx_slider and sfx_bus_idx != -1:
-		sfx_slider.value = db_to_linear(AudioServer.get_bus_volume_db(sfx_bus_idx))
+	# Блокируем сигналы чтобы избежать рекурсии при заполнении
+	var old_block = is_blocking_signals()
+	set_block_signals(true)
+	
+	# Громкость музыки и звуков
+	if music_slider:
+		music_slider.value = AudioManager.get_music_volume() if get_node_or_null("/root/AudioManager") else GameManager.audio_music_volume
+	if sfx_slider:
+		sfx_slider.value = AudioManager.get_sfx_volume() if get_node_or_null("/root/AudioManager") else GameManager.audio_sfx_volume
+	
+	# Мобильные элементы управления
+	if swap_button:
+		swap_button.button_pressed = GameManager.mobile_swap_controls
+	if opacity_slider:
+		opacity_slider.value = GameManager.mobile_controls_opacity
+	if joystick_slider:
+		joystick_slider.value = GameManager.mobile_joystick_scale
 
-	# Window Mode
-	if mode_option:
-		mode_option.clear()
-		mode_option.add_item(tr("Windowed"), 0)
-		mode_option.add_item(tr("Fullscreen"), 1)
-		
-		var current_mode = DisplayServer.window_get_mode()
-		if current_mode == DisplayServer.WINDOW_MODE_FULLSCREEN or current_mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
-			mode_option.select(1)
-		else:
-			mode_option.select(0)
-
-	# Resolution
-	if resolution_option:
-		resolution_option.clear()
-		var resolutions = [
-			Vector2i(1280, 720),
-			Vector2i(1366, 768),
-			Vector2i(1600, 900),
-			Vector2i(1920, 1080),
-			Vector2i(2560, 1440)
-		]
-		
-		var current_size = DisplayServer.window_get_size()
-		var selected_idx = 3 # Default 1920x1080 usually
-		
-		for i in range(resolutions.size()):
-			var res = resolutions[i]
-			resolution_option.add_item("%dx%d" % [res.x, res.y], i)
-			resolution_option.set_item_metadata(i, res)
-			if res == current_size:
-				selected_idx = i
-				
-		resolution_option.select(selected_idx)
-
-	# Language
+	# Язык — только текст, без иконок-картинок
 	if lang_option:
 		lang_option.clear()
+		lang_option.add_item("🇬🇧  English", 0)
+		lang_option.add_item("🇷🇺  Русский", 1)
 		
-		# Load textures for icons and resize them safely
-		var en_tex = load("res://Assets/Flag/United Kingdom Flag Pixel Art.jpg")
-		var en_flag = en_tex
-		if en_tex:
-			var img = en_tex.get_image()
-			if img:
-				img.resize(32, 24)
-				en_flag = ImageTexture.create_from_image(img)
-		
-		var ru_tex = load("res://Assets/Flag/Russia Flag Pixel Art.jpg")
-		var ru_flag = ru_tex
-		if ru_tex:
-			var img = ru_tex.get_image()
-			if img:
-				img.resize(32, 24)
-				ru_flag = ImageTexture.create_from_image(img)
-
-		if en_flag: lang_option.add_icon_item(en_flag, "English", 0)
-		else: lang_option.add_item("English", 0)
-		
-		if ru_flag: lang_option.add_icon_item(ru_flag, "Русский", 1)
-		else: lang_option.add_item("Русский", 1)
-		
-		# Set selected item based on current locale
 		if TranslationServer.get_locale().begins_with("ru"):
 			lang_option.select(1)
 		else:
 			lang_option.select(0)
+		
+	# Обновляем локализацию
+	_localize_ui_elements()
+	
+	set_block_signals(old_block)
 
-func _on_master_volume_changed(value: float) -> void:
-	if master_bus_idx != -1:
-		AudioServer.set_bus_volume_db(master_bus_idx, linear_to_db(value))
+func _localize_ui_elements() -> void:
+	# Заголовок
+	var title = find_child("Title")
+	if title: title.text = tr("SETTINGS")
+	
+	var music_lbl = find_child("MusicVolLabel")
+	if music_lbl: music_lbl.text = tr("Music Volume")
+	
+	var sfx_lbl = find_child("SFXVolLabel")
+	if sfx_lbl: sfx_lbl.text = tr("SFX Volume")
+	
+	var swap_lbl = find_child("SwapLabel")
+	if swap_lbl: swap_lbl.text = tr("Swap Layout")
+	
+	if swap_button:
+		swap_button.text = tr("Mirrored")
+	
+	var opac_lbl = find_child("OpacityLabel")
+	if opac_lbl: opac_lbl.text = tr("Controls Opacity")
+	
+	var size_lbl = find_child("JoystickSizeLabel")
+	if size_lbl: size_lbl.text = tr("Joystick Scale")
+	
+	var back_btn = find_child("BackButton")
+	if back_btn: back_btn.text = tr("BACK")
+	
+	var lang_lbl = find_child("LangLabel")
+	if lang_lbl: lang_lbl.text = tr("Language")
+	
+	# Названия вкладок
+	var tabs = find_child("TabContainer")
+	if tabs:
+		tabs.set_tab_title(0, tr("Audio"))
+		tabs.set_tab_title(1, tr("Controls"))
+		tabs.set_tab_title(2, tr("Language"))
+
+func _on_music_volume_changed(value: float) -> void:
+	if not is_blocking_signals():
+		if get_node_or_null("/root/AudioManager"):
+			AudioManager.set_music_volume(value)
+		GameManager.audio_music_volume = value
+		GameManager.save_game()
 
 func _on_sfx_volume_changed(value: float) -> void:
-	if sfx_bus_idx != -1:
-		AudioServer.set_bus_volume_db(sfx_bus_idx, linear_to_db(value))
+	if not is_blocking_signals():
+		if get_node_or_null("/root/AudioManager"):
+			AudioManager.set_sfx_volume(value)
+		GameManager.audio_sfx_volume = value
+		GameManager.save_game()
 
-func _on_mode_selected(index: int) -> void:
-	match index:
-		0:
-			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-		1:
-			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-
-func _on_resolution_selected(index: int) -> void:
-	var res = resolution_option.get_item_metadata(index)
-	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED) # Ensure we're windowed to resize
-	DisplayServer.window_set_size(res)
-	
-	# Center window
-	var screen_size = DisplayServer.screen_get_size()
-	var new_pos = screen_size / 2 - res / 2
-	DisplayServer.window_set_position(new_pos)
+func _on_mobile_settings_changed(_val = null) -> void:
+	if not is_blocking_signals():
+		GameManager.update_mobile_settings(swap_button.button_pressed, opacity_slider.value, joystick_slider.value)
 
 func _on_lang_selected(index: int) -> void:
 	match index:
 		0:
-			TranslationServer.set_locale("en")
+			GameManager.set_language("en")
 		1:
-			TranslationServer.set_locale("ru")
-	_setup_ui()
+			GameManager.set_language("ru")
+	_localize_ui_elements()
 
 func _on_back_pressed() -> void:
 	back_pressed.emit()
