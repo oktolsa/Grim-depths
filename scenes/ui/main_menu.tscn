@@ -1,0 +1,124 @@
+[gd_scene load_steps=5 format=3 uid="uid://mainmenu001"]
+
+[ext_resource type="Script" path="res://scenes/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Theme" uid="uid://ui_theme_001" path="res://scenes/ui/ui_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://Assets/logopng.png" id="2_logo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.04, 0.01, 0.01, 1)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_menu")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="MenuBox" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -350.0
+offset_right = 300.0
+offset_bottom = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ContentContainer" type="VBoxContainer" parent="MenuBox"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 35
+alignment = 1
+
+[node name="LogoContainer" type="CenterContainer" parent="MenuBox/ContentContainer"]
+layout_mode = 2
+
+[node name="Logo" type="TextureRect" parent="MenuBox/ContentContainer/LogoContainer"]
+texture_filter = 2
+texture_repeat = 1
+custom_minimum_size = Vector2(400, 180)
+layout_mode = 2
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TitleLabel" type="Label" parent="MenuBox/ContentContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 54
+text = "GRIM DEPTHS"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="MenuBox/ContentContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="PlayButton" type="Button" parent="MenuBox/ContentContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 65)
+layout_mode = 2
+text = "START EXPEDITION"
+
+[node name="TalentsButton" type="Button" parent="MenuBox/ContentContainer/ButtonsContainer"]
+visible = false
+custom_minimum_size = Vector2(0, 65)
+layout_mode = 2
+text = "CHARACTER TALENTS"
+
+[node name="SettingsButton" type="Button" parent="MenuBox/ContentContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 65)
+layout_mode = 2
+text = "OPTIONS"
+
+[node name="ExitButton" type="Button" parent="MenuBox/ContentContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 65)
+layout_mode = 2
+text = "EXIT TO DESKTOP"
+
+[node name="CurrencyLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 40.0
+offset_right = -50.0
+offset_bottom = 80.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 26
+text = "Soul Shards: 0"
+horizontal_alignment = 2
+
+[connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/PlayButton" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/TalentsButton" to="." method="_on_talents_pressed"]
+[connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/SettingsButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/ExitButton" to="." method="_on_exit_pressed"]
+

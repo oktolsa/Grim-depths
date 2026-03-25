@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://enemy001"]
+
+[ext_resource type="Script" path="res://scenes/enemy/enemy.gd" id="1_enemy"]
+[ext_resource type="PackedScene" uid="uid://bv8gq7kxj5o2m" path="res://scenes/experience_gem/experience_gem.tscn" id="2_gem"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
+radius = 16.0
+
+[node name="Enemy" type="CharacterBody2D"]
+collision_layer = 3
+collision_mask = 1
+script = ExtResource("1_enemy")
+experience_gem_scene = ExtResource("2_gem")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_enemy")
+
+[node name="DamageFlashTimer" type="Timer" parent="."]
+one_shot = true

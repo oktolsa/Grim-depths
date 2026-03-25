@@ -1,0 +1,68 @@
+[gd_scene load_steps=7 format=3 uid="uid://skeleton_enemy_001"]
+
+[ext_resource type="Script" path="res://scenes/enemy/skeleton/skeleton.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://hrwpb1i3ba51" path="res://Assets/DebtsInTheDepthsAssets/Characters/sprSkeleton1.png" id="2_sprite"]
+[ext_resource type="PackedScene" uid="uid://bv8gq7kxj5o2m" path="res://scenes/experience_gem/experience_gem.tscn" id="3_gem"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_skeleton"]
+radius = 10.0
+
+[sub_resource type="Animation" id="Animation_walk"]
+resource_name = "walk"
+length = 0.6
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.3, 0.45),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3]
+}
+
+[sub_resource type="Animation" id="Animation_idle"]
+resource_name = "idle"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_skeleton"]
+_data = {
+"idle": SubResource("Animation_idle"),
+"walk": SubResource("Animation_walk")
+}
+
+[node name="Skeleton" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_script")
+experience_gem_scene = ExtResource("3_gem")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_skeleton")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sprite")
+hframes = 4
+vframes = 1
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_skeleton")
+}
+
+[node name="DamageFlashTimer" type="Timer" parent="."]
+one_shot = true

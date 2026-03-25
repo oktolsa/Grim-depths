@@ -1,0 +1,374 @@
+[gd_scene format=3 uid="uid://main001"]
+
+[ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scenes/spawner/enemy_spawner.gd" id="3_spawner"]
+[ext_resource type="PackedScene" uid="uid://skeleton_enemy_001" path="res://scenes/enemy/skeleton/skeleton.tscn" id="4_enemy"]
+[ext_resource type="Texture2D" uid="uid://bivjw6jxnp41c" path="res://Assets/Under.png" id="5_under"]
+[ext_resource type="Theme" uid="uid://ui_theme_001" path="res://scenes/ui/ui_theme.tres" id="6_theme"]
+[ext_resource type="PackedScene" path="res://scenes/health_potion/health_potion.tscn" id="7_potion"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/goblin_archer/goblin_archer.tscn" id="8_goblin"]
+[ext_resource type="PackedScene" uid="uid://boss_enemy_001" path="res://scenes/enemy/boss/boss.tscn" id="9_boss"]
+[ext_resource type="Script" path="res://scenes/main/pause_panel.gd" id="10_pause"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bg"]
+bg_color = Color(0.2, 0.2, 0.2, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
+bg_color = Color(0.8, 0.2, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exp_bg"]
+bg_color = Color(0.15, 0.15, 0.2, 0.8)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exp_fill"]
+bg_color = Color(0.9, 0.6, 0.2, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="Main" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1_main")
+player_scene = ExtResource("2_player")
+health_potion_scene = ExtResource("7_potion")
+
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(0.85, 0.85, 0.9, 1)
+
+[node name="Background" type="Sprite2D" parent="."]
+z_index = -10
+texture_repeat = 2
+texture = ExtResource("5_under")
+region_enabled = true
+region_rect = Rect2(-5020, -5020, 10040, 10040)
+
+[node name="Entities" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="EnemySpawner" type="Node2D" parent="."]
+script = ExtResource("3_spawner")
+enemy_scene = ExtResource("4_enemy")
+extra_enemy_scenes = Array[PackedScene]([ExtResource("8_goblin")])
+boss_scene = ExtResource("9_boss")
+
+[node name="SpawnTimer" type="Timer" parent="EnemySpawner"]
+autostart = true
+
+[node name="GameTimer" type="Timer" parent="."]
+autostart = true
+
+[node name="DifficultyTimer" type="Timer" parent="."]
+wait_time = 60.0
+autostart = true
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="HBoxContainer" parent="UI"]
+offset_left = 30.0
+offset_top = 40.0
+offset_right = 800.0
+offset_bottom = 100.0
+theme_override_constants/separation = 40
+
+[node name="TimeLabel" type="Label" parent="UI/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 32
+text = "Time: 00:00"
+
+[node name="DifficultyLabel" type="Label" parent="UI/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 28
+text = "Lvl 1"
+
+[node name="PlayerLevelLabel" type="Label" parent="UI/TopBar"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 28
+text = "Player Lv.1"
+
+[node name="KillLabel" type="Label" parent="UI/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 28
+text = "Kills: 0"
+
+[node name="HealthBar" type="ProgressBar" parent="UI"]
+offset_left = 30.0
+offset_top = 110.0
+offset_right = 330.0
+offset_bottom = 140.0
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill")
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="ExperienceBar" type="ProgressBar" parent="UI"]
+offset_left = 30.0
+offset_top = 150.0
+offset_right = 330.0
+offset_bottom = 165.0
+theme_override_styles/background = SubResource("StyleBoxFlat_exp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_exp_fill")
+max_value = 100.0
+value = 0.0
+show_percentage = false
+
+[node name="BossHealthContainer" type="VBoxContainer" parent="UI"]
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 80.0
+offset_right = 300.0
+offset_bottom = 130.0
+theme_override_constants/separation = 5
+
+[node name="BossNameLabel" type="Label" parent="UI/BossHealthContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 24
+text = "BOSS NAME"
+horizontal_alignment = 1
+
+[node name="BossHealthBar" type="ProgressBar" parent="UI/BossHealthContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill")
+max_value = 100.0
+value = 50.0
+show_percentage = false
+
+[node name="UpgradePanel" type="Panel" parent="UI"]
+visible = false
+process_mode = 2
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -300.0
+offset_right = 350.0
+offset_bottom = 300.0
+theme = ExtResource("6_theme")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/UpgradePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 30.0
+offset_right = -40.0
+offset_bottom = -30.0
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="LevelUpLabel" type="Label" parent="UI/UpgradePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 46
+text = "LEVEL UP!"
+horizontal_alignment = 1
+
+[node name="NewLevelLabel" type="Label" parent="UI/UpgradePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 24
+text = "Level 2"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="UI/UpgradePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+
+[node name="ChooseLabel" type="Label" parent="UI/UpgradePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+text = "Choose your reward:"
+horizontal_alignment = 1
+
+[node name="UpgradeButton1" type="Button" parent="UI/UpgradePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Upgrade 1"
+autowrap_mode = 3
+
+[node name="UpgradeButton2" type="Button" parent="UI/UpgradePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Upgrade 2"
+autowrap_mode = 3
+
+[node name="UpgradeButton3" type="Button" parent="UI/UpgradePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Upgrade 3"
+autowrap_mode = 3
+
+
+[node name="GameOverPanel" type="Panel" parent="UI"]
+visible = false
+process_mode = 2
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -320.0
+offset_right = 400.0
+offset_bottom = 320.0
+theme = ExtResource("6_theme")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/GameOverPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = 40.0
+offset_right = -50.0
+offset_bottom = -40.0
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="GameOverLabel" type="Label" parent="UI/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 56
+text = "THE DEPTHS CLAIMED YOU"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ResultStats" type="Label" parent="UI/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 28
+text = "RESULTS:
+
+Survival Time: 00:00
+Player Level: 1
+Total Kills: 0"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Spacer" type="Control" parent="UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="RestartButton" type="Button" parent="UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(400, 70)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "RETRY EXPEDITION"
+
+[node name="MainMenuButton" type="Button" parent="UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(400, 70)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "RETURN TO HUB"
+
+
+
+[connection signal="pressed" from="UI/GameOverPanel/VBoxContainer/RestartButton" to="." method="restart_game"]
+[connection signal="pressed" from="UI/GameOverPanel/VBoxContainer/MainMenuButton" to="." method="go_to_main_menu"]
+
+[node name="PausePanel" type="Panel" parent="UI"]
+visible = false
+process_mode = 2
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -250.0
+offset_right = 300.0
+offset_bottom = 250.0
+theme = ExtResource("6_theme")
+script = ExtResource("10_pause")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/PausePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = 40.0
+offset_right = -50.0
+offset_bottom = -40.0
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="PauseLabel" type="Label" parent="UI/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 56
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+
+[node name="ResumeButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(400, 70)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "RESUME EXPEDITION"
+
+[node name="SettingsButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(400, 70)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "OPTIONS"
+
+[node name="MainMenuButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(400, 70)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "RETURN TO HUB"
+
+[connection signal="pressed" from="UI/PausePanel/VBoxContainer/ResumeButton" to="." method="resume_game"]
+[connection signal="pressed" from="UI/PausePanel/VBoxContainer/SettingsButton" to="." method="open_settings"]
+[connection signal="pressed" from="UI/PausePanel/VBoxContainer/MainMenuButton" to="." method="go_to_main_menu"]
