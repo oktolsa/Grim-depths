@@ -43,10 +43,17 @@ var soul_shards: int = 0
 var talents: Dictionary = {}
 var current_language: String = "en"
 
+# Records
+var max_kills: int = 0
+var max_time: float = 0.0
+
 # Mobile Settings
 var mobile_swap_controls: bool = false
 var mobile_controls_opacity: float = 0.8
 var mobile_joystick_scale: float = 1.0
+var mobile_joystick_pos: Vector2 = Vector2(-1, -1) # -1 means use default
+var mobile_dash_pos: Vector2 = Vector2(-1, -1)
+var mobile_pause_pos: Vector2 = Vector2(-1, -1)
 
 # Audio Settings
 var audio_music_volume: float = 0.8
@@ -77,6 +84,9 @@ func _setup_translations() -> void:
 		"CHARACTER TALENTS": "ТАЛАНТЫ",
 		"EXIT TO DESKTOP": "ВЫХОД",
 		"Soul Shards:": "Осколки душ:",
+		"BEST RECORD:": "ЛУЧШИЙ РЕЗУЛЬТАТ:",
+		"Kills:": "Убийства:",
+		"Time:": "Время:",
 		
 		# Settings
 		"Audio": "Аудио",
@@ -85,10 +95,10 @@ func _setup_translations() -> void:
 		"Master Volume": "Общая громкость",
 		"Music Volume": "Громкость музыки",
 		"SFX Volume": "Громкость звуков",
-		"Swap Layout": "Поменять местами",
-		"Mirrored": "Инверсия",
-		"Right-handed": "Правша (инверсия)",
-		"Controls Opacity": "Прозрачность кнопок",
+		"Swap Layout": "Сменить стороны",
+		"Mirrored": "Зеркально",
+		"Right-handed": "Для правшей",
+		"Controls Opacity": "Прозрачность",
 		"Joystick Scale": "Размер джойстика",
 		"Window Mode": "Режим экрана",
 		"Resolution": "Разрешение",
@@ -109,8 +119,6 @@ func _setup_translations() -> void:
 		"RETRY EXPEDITION": "ПОВТОРИТЬ ПОХОД",
 		"RESUME EXPEDITION": "ПРОДОЛЖИТЬ ПОХОД",
 		
-		"Time:": "Время:",
-		"Kills:": "Убийства:",
 		"Level %d": "Уровень %d",
 		"LEVEL UP!": "НОВЫЙ УРОВЕНЬ!",
 		"Choose your reward:": "Выберите награду:",
@@ -135,23 +143,86 @@ func _setup_translations() -> void:
 		"Increases aura attack speed": "Повышает скорость атаки ауры",
 		"Increases max HP": "Увеличивает максимальное здоровье",
 		"Increases experience collection radius": "Увеличивает радиус сбора опыта",
-		
-		"Upgrade 1": "Улучшение 1",
-		"Upgrade 2": "Улучшение 2",
-		"Upgrade 3": "Улучшение 3"
+		"CUSTOMIZE LAYOUT": "УПРАВЛЕНИЕ КНОПКАМИ",
+		"SAVE": "СОХРАНИТЬ",
+		"RESET": "СБРОС",
+		"DRAG BUTTONS": "ПЕРЕТАЩИТЕ КНОПКИ",
+		"DRAG BUTTONS TO MOVE THEM": "ПЕРЕТАЩИТЕ КНОПКИ ДЛЯ ИЗМЕНЕНИЯ",
+		"MIRRORED": "ЗЕРКАЛЬНО",
+		"LEVEL UP": "НОВЫЙ УРОВЕНЬ"
 	}
 	for key in ru_strings:
 		ru.add_message(key, ru_strings[key])
 	TranslationServer.add_translation(ru)
 	
-	# English Translation (Self-mapping for clarity and fallback)
+	# English Translation
 	var en = Translation.new()
 	en.locale = "en"
 	var en_strings = {
-		# Terminology change: Expedition -> Expedition (keep consistent as keys)
+		"SETTINGS": "SETTINGS",
+		"BACK": "BACK",
+		"OPTIONS": "OPTIONS",
+		"GRIM DEPTHS": "GRIM DEPTHS",
 		"START EXPEDITION": "START EXPEDITION",
+		"CHARACTER TALENTS": "CHARACTER TALENTS",
+		"EXIT TO DESKTOP": "EXIT TO DESKTOP",
+		"Soul Shards:": "Soul Shards:",
+		"BEST RECORD:": "BEST RECORD:",
+		"Kills:": "Kills:",
+		"Time:": "Time:",
+		"Audio": "Audio",
+		"Controls": "Controls",
+		"Language": "Language",
+		"Master Volume": "Master Volume",
+		"Music Volume": "Music Volume",
+		"SFX Volume": "SFX Volume",
+		"Swap Layout": "Swap Layout",
+		"Mirrored": "Mirrored",
+		"Right-handed": "Right-handed",
+		"Controls Opacity": "Controls Opacity",
+		"Joystick Scale": "Joystick Scale",
+		"Window Mode": "Window Mode",
+		"Resolution": "Resolution",
+		"Windowed": "Windowed",
+		"Fullscreen": "Fullscreen",
+		"PAUSE": "PAUSE",
+		"PAUSED": "PAUSED",
+		"RESUME": "RESUME",
+		"RESTART": "RESTART",
+		"MAIN MENU": "MAIN MENU",
+		"RETURN TO HUB": "RETURN TO HUB",
+		"GAME OVER": "GAME OVER",
+		"THE DEPTHS CLAIMED YOU": "THE DEPTHS CLAIMED YOU",
+		"VICTORY": "VICTORY",
+		"YOU SURVIVED!": "YOU SURVIVED!",
 		"RETRY EXPEDITION": "RETRY EXPEDITION",
-		"RESUME EXPEDITION": "RESUME EXPEDITION"
+		"RESUME EXPEDITION": "RESUME EXPEDITION",
+		"Level %d": "Level %d",
+		"LEVEL UP!": "LEVEL UP!",
+		"Choose your reward:": "Choose your reward:",
+		"RESULTS:": "RESULTS:",
+		"Survival Time:": "Survival Time:",
+		"Player Level:": "Player Level:",
+		"Total Kills:": "Total Kills:",
+		"Speed Boost": "Speed Boost",
+		"Aura Power": "Aura Power",
+		"Aura Expansion": "Aura Expansion",
+		"Aura Haste": "Aura Haste",
+		"Max Health": "Max Health",
+		"Magnet": "Magnet",
+		"Increases movement speed": "Increases movement speed",
+		"Increases aura damage": "Increases aura damage",
+		"Increases aura radius": "Increases aura radius",
+		"Increases aura attack speed": "Increases aura attack speed",
+		"Increases max HP": "Increases max HP",
+		"Increases experience collection radius": "Increases experience collection radius",
+		"CUSTOMIZE LAYOUT": "CUSTOMIZE LAYOUT",
+		"SAVE": "SAVE",
+		"RESET": "RESET",
+		"DRAG BUTTONS": "DRAG BUTTONS",
+		"DRAG BUTTONS TO MOVE THEM": "DRAG BUTTONS TO MOVE THEM",
+		"MIRRORED": "MIRRORED",
+		"LEVEL UP": "LEVEL UP"
 	}
 	for key in en_strings:
 		en.add_message(key, en_strings[key])
@@ -268,15 +339,32 @@ func set_language(locale: String) -> void:
 	TranslationServer.set_locale(locale)
 	save_game()
 
-func update_mobile_settings(swap: bool, opacity: float, scale: float) -> void:
+func update_mobile_settings(swap: bool, opacity: float, scale: float, joy_pos: Vector2 = Vector2(-1,-1), dash_pos: Vector2 = Vector2(-1,-1)) -> void:
 	mobile_swap_controls = swap
 	mobile_controls_opacity = opacity
 	mobile_joystick_scale = scale
+	if joy_pos != Vector2(-1, -1):
+		mobile_joystick_pos = joy_pos
+	if dash_pos != Vector2(-1, -1):
+		mobile_dash_pos = dash_pos
 	mobile_settings_changed.emit()
 	save_game()
 
 func trigger_game_over() -> void:
 	game_over.emit()
+
+func update_records(new_time: float, new_kills: int) -> bool:
+	var improved = false
+	if new_kills > max_kills:
+		max_kills = new_kills
+		improved = true
+	if new_time > max_time:
+		max_time = new_time
+		improved = true
+	
+	if improved:
+		save_game()
+	return improved
 
 ### Persistence & Currency ###
 
@@ -303,8 +391,14 @@ func save_game() -> void:
 			"mobile_swap": mobile_swap_controls,
 			"mobile_opacity": mobile_controls_opacity,
 			"mobile_scale": mobile_joystick_scale,
+			"mobile_joy_pos_x": mobile_joystick_pos.x,
+			"mobile_joy_pos_y": mobile_joystick_pos.y,
+			"mobile_dash_pos_x": mobile_dash_pos.x,
+			"mobile_dash_pos_y": mobile_dash_pos.y,
 			"audio_music_volume": audio_music_volume,
-			"audio_sfx_volume": audio_sfx_volume
+			"audio_sfx_volume": audio_sfx_volume,
+			"max_kills": max_kills,
+			"max_time": max_time
 		}
 		file.store_string(JSON.stringify(data))
 
@@ -323,8 +417,12 @@ func load_game() -> void:
 			mobile_swap_controls = data.get("mobile_swap", false)
 			mobile_controls_opacity = data.get("mobile_opacity", 0.8)
 			mobile_joystick_scale = data.get("mobile_scale", 1.0)
+			mobile_joystick_pos = Vector2(data.get("mobile_joy_pos_x", -1), data.get("mobile_joy_pos_y", -1))
+			mobile_dash_pos = Vector2(data.get("mobile_dash_pos_x", -1), data.get("mobile_dash_pos_y", -1))
 			audio_music_volume = data.get("audio_music_volume", 0.8)
 			audio_sfx_volume = data.get("audio_sfx_volume", 1.0)
+			max_kills = int(data.get("max_kills", 0))
+			max_time = float(data.get("max_time", 0.0))
 			TranslationServer.set_locale(current_language)
 
 func unlock_talent(talent_id: String, cost: int) -> bool:

@@ -40,8 +40,9 @@ func _handle_attack() -> void:
 	if not can_attack or not is_instance_valid(GameManager.player):
 		return
 		
-	# Boss is large (radius ~136), attack range ~150 pixels (squared: 22500.0)
-	if global_position.distance_squared_to(GameManager.player.global_position) < 22500.0:
+	# Radii: Boss ~64 (visual), Player 16. Total 80.
+	# Using 35 (squared: 1225) means the boss must be extremely close (overlapping more than half) to attack.
+	if global_position.distance_squared_to(GameManager.player.global_position) < 1225.0:
 		if GameManager.player.has_method("take_damage"):
 			GameManager.player.take_damage(contact_damage)
 			can_attack = false
@@ -50,12 +51,16 @@ func _handle_attack() -> void:
 func take_damage(amount: float) -> void:
 	super.take_damage(amount)
 	
+	if not is_inside_tree(): return
+	
 	# Если это "главный" босс, обновляем UI
 	var main = get_tree().current_scene as Main
 	if main and is_instance_valid(main) and main._current_boss == self:
 		main.update_boss_health_ui(hp, max_hp)
 
 func _die() -> void:
+	if not is_inside_tree(): return
+	
 	# Если это "главный" босс, скрываем UI
 	var main = get_tree().current_scene as Main
 	if main and is_instance_valid(main) and main._current_boss == self:
@@ -67,6 +72,8 @@ func _die() -> void:
 	super._die()
 
 func _on_boss_kill_effects() -> void:
+	if not is_inside_tree(): return
+	
 	# Воспроизводим звук победы над боссом
 	if get_node_or_null("/root/AudioManager"):
 		AudioManager.play_kill_boss()

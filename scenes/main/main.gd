@@ -102,7 +102,7 @@ func _connect_signals() -> void:
 	GameManager.boss_spawned.connect(_on_boss_spawned)
 	GameManager.boss_health_changed.connect(_on_boss_health_changed)
 	GameManager.boss_died.connect(_on_boss_died)
-	GameManager.mobile_settings_changed.connect(_apply_mobile_settings)
+	GameManager.mobile_settings_changed.connect(_on_mobile_settings_changed)
 
 func _spawn_player() -> void:
 	if not player_scene:
@@ -342,6 +342,9 @@ func _on_game_over() -> void:
 	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b]\n" % [tr("Player Level:"), player_lvl]
 	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b][/center]" % [tr("Total Kills:"), kills_count]
 	
+	# Update Records
+	GameManager.update_records(game_time, kills_count)
+	
 	# Стилизация и анимация
 	_style_premium_panel(game_over_panel)
 	game_over_panel.modulate.a = 0.0
@@ -389,6 +392,7 @@ func _setup_mobile_controls() -> void:
 	_joystick.set_script(load("res://scenes/ui/joystick.gd"))
 	_joystick.custom_minimum_size = Vector2(200, 200)
 	_joystick.size = Vector2(200, 200)
+	_joystick.pivot_offset = Vector2(100, 100)
 	ui_layer.add_child(_joystick)
 	
 	# Добавляем кнопку рывка (Dash)
@@ -397,6 +401,7 @@ func _setup_mobile_controls() -> void:
 	_dash_btn.name = "MobileDashButton"
 	_dash_btn.custom_minimum_size = Vector2(120, 120)
 	_dash_btn.size = Vector2(120, 120)
+	_dash_btn.pivot_offset = Vector2(60, 60)
 	_dash_btn.focus_mode = Control.FOCUS_NONE
 	_dash_btn.action_mode = Button.ACTION_MODE_BUTTON_PRESS
 	
@@ -440,6 +445,7 @@ func _setup_mobile_controls() -> void:
 	_pause_btn.name = "MobilePauseButton"
 	_pause_btn.custom_minimum_size = Vector2(80, 80)
 	_pause_btn.size = Vector2(80, 80)
+	_pause_btn.pivot_offset = Vector2(40, 40)
 	_pause_btn.focus_mode = Control.FOCUS_NONE
 	_pause_btn.action_mode = Button.ACTION_MODE_BUTTON_PRESS
 	_pause_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -447,6 +453,13 @@ func _setup_mobile_controls() -> void:
 	ui_layer.add_child(_pause_btn)
 	
 	_apply_mobile_settings()
+
+func _on_mobile_settings_changed() -> void:
+	_apply_mobile_settings()
+	_localize_game_ui()
+	_update_time_display()
+	_update_difficulty_display()
+	_update_kill_display()
 
 func _apply_mobile_settings() -> void:
 	if not _joystick or not is_instance_valid(_joystick):
@@ -457,29 +470,33 @@ func _apply_mobile_settings() -> void:
 	var opacity = GameManager.mobile_controls_opacity
 	var scale = GameManager.mobile_joystick_scale
 	
-	# Position Joystick
-	if is_swapped:
-		# Swapped: Joystick is on the RIGHT
-		_joystick.position = Vector2(viewport_size.x - 300 * scale, viewport_size.y - 300 * scale)
+	# Handle Joystick position
+	if GameManager.mobile_joystick_pos != Vector2(-1, -1):
+		_joystick.position = GameManager.mobile_joystick_pos
 	else:
-		# Normal: Joystick is on the LEFT
-		_joystick.position = Vector2(100, viewport_size.y - 300 * scale)
+		# Default positions
+		if is_swapped:
+			_joystick.position = Vector2(viewport_size.x - (300 * scale), viewport_size.y - (300 * scale))
+		else:
+			_joystick.position = Vector2(100, viewport_size.y - (300 * scale))
 	
 	_joystick.scale = Vector2(scale, scale)
 	_joystick.modulate.a = opacity
 	
-	# Position Dash Button
-	if is_swapped:
-		# Swapped: Dash is on the LEFT
-		_dash_btn.position = Vector2(100, viewport_size.y - 250 * scale)
+	# Handle Dash Button position
+	if GameManager.mobile_dash_pos != Vector2(-1, -1):
+		_dash_btn.position = GameManager.mobile_dash_pos
 	else:
-		# Normal: Dash is on the RIGHT
-		_dash_btn.position = Vector2(viewport_size.x - 220, viewport_size.y - 250 * scale)
+		# Default positions
+		if is_swapped:
+			_dash_btn.position = Vector2(100, viewport_size.y - (250 * scale))
+		else:
+			_dash_btn.position = Vector2(viewport_size.x - (220 * scale), viewport_size.y - (250 * scale))
 		
 	_dash_btn.scale = Vector2(scale, scale)
 	_dash_btn.modulate.a = opacity
 	
-	# Position Pause Button (usually stay top right)
+	# Handle Pause Button position (usually stay top right)
 	_pause_btn.position = Vector2(viewport_size.x - 120, 30)
 	_pause_btn.modulate.a = opacity
 

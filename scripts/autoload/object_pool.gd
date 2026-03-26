@@ -25,7 +25,8 @@ func get_instance(scene: PackedScene) -> Node:
 		instance = scene.instantiate()
 		instance.set_meta("scene_path", path)
 	
-	# Активируем обработку (на случай если объект был в пуле)
+	# Активация обработки произойдет автоматически при добавлении в дерево,
+	# но мы убеждаемся, что флаги установлены корректно.
 	instance.set_process(true)
 	instance.set_physics_process(true)
 	

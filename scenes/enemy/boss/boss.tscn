@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bv8gq7kxj5o2m" path="res://scenes/experience_gem/experience_gem.tscn" id="3_gem"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_boss"]
-radius = 34.0
+radius = 16.0
 
 [sub_resource type="Animation" id="Animation_walk"]
 resource_name = "walk"

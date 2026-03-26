@@ -27,6 +27,21 @@ func _connect_signals() -> void:
 		opacity_slider.value_changed.connect(_on_mobile_settings_changed)
 	if joystick_slider:
 		joystick_slider.value_changed.connect(_on_mobile_settings_changed)
+	
+	# Add custom layout button programmatically
+	var customize_btn = Button.new()
+	customize_btn.text = tr("CUSTOMIZE LAYOUT")
+	customize_btn.name = "CustomizeLayoutButton"
+	customize_btn.pressed.connect(_on_customize_layout_pressed)
+	
+	if joystick_slider:
+		var parent = joystick_slider.get_parent()
+		if parent:
+			parent.add_child(customize_btn)
+			customize_btn.custom_minimum_size = Vector2(0, 50)
+			# Add margin for better layout if it's a VBox
+			if parent is VBoxContainer:
+				customize_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 func _setup_ui() -> void:
 	# Блокируем сигналы чтобы избежать рекурсии при заполнении
@@ -60,6 +75,12 @@ func _setup_ui() -> void:
 		
 	# Обновляем локализацию
 	_localize_ui_elements()
+	
+	# Fix CheckButton overlap
+	if swap_button:
+		# Use singular 'constant' instead of 'constants'
+		swap_button.add_theme_constant_override("h_separation", 35)
+		swap_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	
 	set_block_signals(old_block)
 
@@ -124,6 +145,91 @@ func _on_lang_selected(index: int) -> void:
 		1:
 			GameManager.set_language("ru")
 	_localize_ui_elements()
+
+func _on_customize_layout_pressed() -> void:
+	# Create a full-screen overlay for customization
+	var overlay = Panel.new()
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	# Stylize overlay (dark background but not affecting children)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.85)
+	overlay.add_theme_stylebox_override("panel", style)
+	
+	# The customization logic node
+	var custom_node = Control.new()
+	custom_node.set_script(load("res://scenes/ui/controls_customizer.gd"))
+	custom_node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(custom_node)
+	
+	# Add the actual interactive elements
+	var joy_mock = Control.new()
+	joy_mock.name = "Joystick"
+	joy_mock.custom_minimum_size = Vector2(200, 200)
+	joy_mock.size = Vector2(200, 200)
+	joy_mock.pivot_offset = Vector2(100, 100)
+	joy_mock.set_script(load("res://scenes/ui/joystick.gd"))
+	custom_node.add_child(joy_mock)
+	
+	var dash_mock = Button.new()
+	dash_mock.name = "Dash"
+	dash_mock.text = "DASH"
+	dash_mock.custom_minimum_size = Vector2(120, 120)
+	dash_mock.size = Vector2(120, 120)
+	dash_mock.pivot_offset = Vector2(60, 60)
+	
+	# Dash Button Styling
+	var dash_style = StyleBoxFlat.new()
+	dash_style.bg_color = Color(1, 1, 1, 0.3)
+	dash_style.corner_radius_top_left = 60
+	dash_style.corner_radius_top_right = 60
+	dash_style.corner_radius_bottom_left = 60
+	dash_style.corner_radius_bottom_right = 60
+	dash_mock.add_theme_stylebox_override("normal", dash_style)
+	dash_mock.add_theme_stylebox_override("hover", dash_style)
+	custom_node.add_child(dash_mock)
+	
+	# Header Label
+	var header = Label.new()
+	header.text = tr("DRAG BUTTONS TO MOVE THEM")
+	header.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	header.position.y = 50
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 32)
+	custom_node.add_child(header)
+	
+	# Footer Buttons
+	var footer = HBoxContainer.new()
+	footer.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	footer.offset_bottom = -50
+	footer.offset_top = -120
+	footer.offset_left = -220
+	footer.offset_right = 220
+	footer.add_theme_constant_override("separation", 20)
+	custom_node.add_child(footer)
+	
+	var save_btn = Button.new()
+	save_btn.name = "SaveButton"
+	save_btn.text = tr("SAVE")
+	save_btn.custom_minimum_size = Vector2(200, 60)
+	footer.add_child(save_btn)
+	
+	var reset_btn = Button.new()
+	reset_btn.name = "ResetButton"
+	reset_btn.text = tr("RESET")
+	reset_btn.custom_minimum_size = Vector2(200, 60)
+	footer.add_child(reset_btn)
+	
+	# Connect closing signals safely
+	save_btn.pressed.connect(func(): if is_instance_valid(overlay): overlay.queue_free())
+	reset_btn.pressed.connect(func(): if is_instance_valid(overlay): overlay.queue_free())
+	
+	# Ensure overlay is visible and on top
+	if get_parent():
+		get_parent().add_child(overlay)
+	else:
+		get_tree().root.add_child(overlay)
 
 func _on_back_pressed() -> void:
 	back_pressed.emit()

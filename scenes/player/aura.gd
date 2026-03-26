@@ -54,6 +54,21 @@ func _deal_damage_to_enemies() -> void:
 		if body == owner or body == get_parent():
 			continue
 			
+		# Improved check: for large enemies (like the Boss), we allow damage 
+		# if they are at least partially overlapping the visual aura.
+		var distance = global_position.distance_to(body.global_position)
+		
+		var enemy_radius = 16.0 # Default fallback
+		if body.has_node("CollisionShape2D"):
+			var shape = body.get_node("CollisionShape2D").shape
+			if shape is CircleShape2D:
+				# Account for scale (the boss is scaled 4x)
+				enemy_radius = shape.radius * body.scale.x
+		
+		# Allow damage if at least 25% of the enemy's radius is inside the aura
+		if distance > aura_radius + (enemy_radius * 0.75):
+			continue
+			
 		if body.has_method("take_damage"):
 			body.take_damage(damage)
 			hit_enemy = true

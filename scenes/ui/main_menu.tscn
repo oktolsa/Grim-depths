@@ -5,7 +5,26 @@
 [ext_resource type="Texture2D" path="res://Assets/logopng.png" id="2_logo"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.04, 0.01, 0.01, 1)
+bg_color = Color(0.06, 0.02, 0.02, 1)
+draw_center = true
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+corner_detail = 1
+shadow_color = Color(0, 0, 0, 1)
+shadow_size = 0
+anti_aliasing = false
+
+[sub_resource type="Gradient" id="Gradient_bg"]
+offsets = PackedFloat32Array(0, 0.7, 1)
+colors = PackedColorArray(0.15, 0.02, 0.02, 1, 0.05, 0.01, 0.01, 1, 0.02, 0, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_bg"]
+gradient = SubResource("Gradient_bg")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 1)
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -17,14 +36,15 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_menu")
 
-[node name="Background" type="Panel" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+texture = SubResource("GradientTexture2D_bg")
+expand_mode = 1
 
 [node name="MenuBox" type="Panel" parent="."]
 layout_mode = 1
@@ -102,7 +122,6 @@ text = "EXIT TO DESKTOP"
 
 [node name="CurrencyLabel" type="Label" parent="."]
 unique_name_in_owner = true
-visible = false
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -116,6 +135,40 @@ theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 26
 text = "Soul Shards: 0"
 horizontal_alignment = 2
+
+[node name="RecordFrame" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -180.0
+offset_right = 320.0
+offset_bottom = -40.0
+grow_vertical = 0
+
+[node name="VBox" type="VBoxContainer" parent="RecordFrame"]
+layout_mode = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="BestLabel" type="Label" parent="RecordFrame/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 22
+text = "BEST RECORD:"
+horizontal_alignment = 1
+
+[node name="RecordStats" type="RichTextLabel" parent="RecordFrame/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[center][color=#aaaaaa]Kills:[/color] 0
+[color=#aaaaaa]Time:[/color] 00:00[/center]"
+fit_content = true
+scroll_active = false
 
 [connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/PlayButton" to="." method="_on_play_pressed"]
 [connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/TalentsButton" to="." method="_on_talents_pressed"]
