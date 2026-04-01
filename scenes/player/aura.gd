@@ -71,7 +71,9 @@ func _deal_damage_to_enemies() -> void:
 			
 		if body.has_method("take_damage"):
 			body.take_damage(damage)
+			GameManager.damage_dealt += damage
 			hit_enemy = true
+
 	
 	if hit_enemy and particles:
 		particles.restart()

@@ -68,7 +68,7 @@ func _die() -> void:
 	
 	# Звук убийства босса + эпическая тряска камеры
 	_on_boss_kill_effects()
-	
+	GameManager.boss_kills += 1
 	super._die()
 
 func _on_boss_kill_effects() -> void:

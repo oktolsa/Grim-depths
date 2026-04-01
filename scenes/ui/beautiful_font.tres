@@ -1,0 +1,6 @@
+[gd_resource type="SystemFont" format=3 uid="uid://main_font"]
+
+[resource]
+font_names = PackedStringArray("Georgia", "Times New Roman", "Palatino Linotype", "Cambria")
+font_weight = 700
+subpixel_positioning = 0

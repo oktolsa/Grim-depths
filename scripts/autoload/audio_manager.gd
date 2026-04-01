@@ -104,16 +104,22 @@ func set_music_volume(value: float) -> void:
 	var bus_idx = AudioServer.get_bus_index(MUSIC_BUS)
 	if bus_idx != -1:
 		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(music_volume))
+		# Mute if volume is 0
+		AudioServer.set_bus_mute(bus_idx, music_volume < 0.01)
 	# Обновляем значение в GameManager для последующего сохранения
 	GameManager.audio_music_volume = music_volume
+
 
 func set_sfx_volume(value: float) -> void:
 	sfx_volume = clamp(value, 0.0, 1.0)
 	var bus_idx = AudioServer.get_bus_index(SFX_BUS)
 	if bus_idx != -1:
 		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(sfx_volume))
+		# Mute if volume is 0
+		AudioServer.set_bus_mute(bus_idx, sfx_volume < 0.01)
 	# Обновляем значение в GameManager для последующего сохранения
 	GameManager.audio_sfx_volume = sfx_volume
+
 
 ## Получить текущую громкость музыки (0.0 - 1.0)
 func get_music_volume() -> float:

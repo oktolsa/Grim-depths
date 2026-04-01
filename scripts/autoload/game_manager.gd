@@ -37,17 +37,51 @@ const MIN_AURA_INTERVAL: float = 0.12
 
 ## Статистика текущего забега
 var kills: int = 0
+var boss_kills: int = 0
+var run_start_time: float = 0.0
+var damage_dealt: float = 0.0
+var distance_traveled: float = 0.0
+var potions_consumed: int = 0
+var dashes_made: int = 0
+var kills_this_minute: int = 0
+var max_kills_per_minute_run: int = 0
+var minute_timer: float = 0.0
+
 
 ## Currency and Progression
 var soul_shards: int = 0
 var talents: Dictionary = {}
 var current_language: String = "en"
 
-# Records
+# Records (Deprecated in favor of stats dictionaries)
 var max_kills: int = 0
 var max_time: float = 0.0
 
+# New Statistics Structure
+var best_run_stats: Dictionary = {
+	"time": 0.0,
+	"kills": 0,
+	"boss_kills": 0,
+	"level": 1,
+	"shards": 0,
+	"kills_per_min": 0
+}
+
+var total_stats: Dictionary = {
+	"games_played": 0,
+	"time_played": 0.0,
+	"kills": 0,
+	"boss_kills": 0,
+	"deaths": 0,
+	"shards_collected": 0,
+	"damage_dealt": 0.0,
+	"distance_traveled": 0.0,
+	"potions_consumed": 0,
+	"dashes_made": 0
+}
+
 # Mobile Settings
+
 var mobile_swap_controls: bool = false
 var mobile_controls_opacity: float = 0.8
 var mobile_joystick_scale: float = 1.0
@@ -87,6 +121,7 @@ func _setup_translations() -> void:
 		"BEST RECORD:": "ЛУЧШИЙ РЕЗУЛЬТАТ:",
 		"Kills:": "Убийства:",
 		"Time:": "Время:",
+		"Soul Shards Earned:": "Получено осколков душ:",
 		
 		# Settings
 		"Audio": "Аудио",
@@ -127,7 +162,7 @@ func _setup_translations() -> void:
 		"RESULTS:": "РЕЗУЛЬТАТЫ:",
 		"Survival Time:": "Время выживания:",
 		"Player Level:": "Уровень игрока:",
-		"Total Kills:": "Всего убийств:",
+
 		
 		# Upgrades
 		"Speed Boost": "Ускорение",
@@ -149,7 +184,29 @@ func _setup_translations() -> void:
 		"DRAG BUTTONS": "ПЕРЕТАЩИТЕ КНОПКИ",
 		"DRAG BUTTONS TO MOVE THEM": "ПЕРЕТАЩИТЕ КНОПКИ ДЛЯ ИЗМЕНЕНИЯ",
 		"MIRRORED": "ЗЕРКАЛЬНО",
-		"LEVEL UP": "НОВЫЙ УРОВЕНЬ"
+		"LEVEL UP": "НОВЫЙ УРОВЕНЬ",
+		
+		# Statistics Menu
+		"STATISTICS": "СТАТИСТИКА",
+		"BEST GAME": "ЛУЧШАЯ ИГРА",
+		"OVERALL": "ОБЩАЯ СТАТИСТИКА",
+		"Max Time:": "Лучшее время:",
+		"Max Kills:": "Макс. убийств:",
+		"Max Boss Kills:": "Убито боссов:",
+		"Max Level:": "Макс. уровень:",
+		"Max Shards:": "Макс. осколков:",
+		"Max Kills/Min:": "Убийств в мин.:",
+		"Games Played:": "Игр сыграно:",
+		"Total Time:": "Общее время:",
+		"Total Kills:": "Всего убийств:",
+		"Total Bosses:": "Всего боссов:",
+		"Total Deaths:": "Всего смертей:",
+		"Total Shards:": "Всего осколков:",
+		"Total Damage:": "Всего урона:",
+		"Total Distance:": "Дистанция:",
+		"Total Potions:": "Выпито зелий:",
+		"Total Dashes:": "Всего рывков:"
+
 	}
 	for key in ru_strings:
 		ru.add_message(key, ru_strings[key])
@@ -170,6 +227,7 @@ func _setup_translations() -> void:
 		"BEST RECORD:": "BEST RECORD:",
 		"Kills:": "Kills:",
 		"Time:": "Time:",
+		"Soul Shards Earned:": "Soul Shards Earned:",
 		"Audio": "Audio",
 		"Controls": "Controls",
 		"Language": "Language",
@@ -203,7 +261,7 @@ func _setup_translations() -> void:
 		"RESULTS:": "RESULTS:",
 		"Survival Time:": "Survival Time:",
 		"Player Level:": "Player Level:",
-		"Total Kills:": "Total Kills:",
+
 		"Speed Boost": "Speed Boost",
 		"Aura Power": "Aura Power",
 		"Aura Expansion": "Aura Expansion",
@@ -222,7 +280,29 @@ func _setup_translations() -> void:
 		"DRAG BUTTONS": "DRAG BUTTONS",
 		"DRAG BUTTONS TO MOVE THEM": "DRAG BUTTONS TO MOVE THEM",
 		"MIRRORED": "MIRRORED",
-		"LEVEL UP": "LEVEL UP"
+		"LEVEL UP": "LEVEL UP",
+		
+		# Statistics Menu
+		"STATISTICS": "STATISTICS",
+		"BEST GAME": "BEST GAME",
+		"OVERALL": "OVERALL",
+		"Max Time:": "Max Time:",
+		"Max Kills:": "Max Kills:",
+		"Max Boss Kills:": "Max Boss Kills:",
+		"Max Level:": "Max Level:",
+		"Max Shards:": "Max Shards:",
+		"Max Kills/Min:": "Max Kills/Min:",
+		"Games Played:": "Games Played:",
+		"Total Time:": "Total Time:",
+		"Total Kills:": "Total Kills:",
+		"Total Bosses:": "Total Bosses:",
+		"Total Deaths:": "Total Deaths:",
+		"Total Shards:": "Total Shards:",
+		"Total Damage:": "Total Damage:",
+		"Total Distance:": "Total Distance:",
+		"Total Potions:": "Total Potions:",
+		"Total Dashes:": "Total Dashes:"
+
 	}
 	for key in en_strings:
 		en.add_message(key, en_strings[key])
@@ -237,6 +317,16 @@ func reset() -> void:
 	enemy_damage_multiplier = 1.0
 	enemy_speed_multiplier = 1.0
 	kills = 0
+	boss_kills = 0
+	damage_dealt = 0.0
+	distance_traveled = 0.0
+	potions_consumed = 0
+	dashes_made = 0
+	kills_this_minute = 0
+	max_kills_per_minute_run = 0
+	minute_timer = 0.0
+	run_start_time = Time.get_ticks_msec() / 1000.0
+
 
 func increase_difficulty() -> void:
 	difficulty_level += 1
@@ -373,6 +463,24 @@ func add_shards(amount: int) -> void:
 	save_game()
 	currency_changed.emit(soul_shards)
 
+func calculate_run_rewards(time: float, current_kills: int, current_boss_kills: int, level: int) -> int:
+	# Формула баланса наград:
+	# Время: 50 за минуту
+	var time_bonus = (time / 60.0) * 50.0
+	# Убийства: 1 за обычного врага
+	var kill_bonus = current_kills * 1.0
+	# Боссы: 100 за каждого босса
+	var boss_bonus = current_boss_kills * 100.0
+	# Уровень: 25 за каждый уровень игрока
+	var level_bonus = level * 25.0
+	
+	return int(time_bonus + kill_bonus + boss_bonus + level_bonus)
+
+func gain_run_rewards(time: float, current_kills: int, current_boss_kills: int, level: int) -> int:
+	var earned = calculate_run_rewards(time, current_kills, current_boss_kills, level)
+	add_shards(earned)
+	return earned
+
 func spend_shards(amount: int) -> bool:
 	if soul_shards >= amount:
 		soul_shards -= amount
@@ -398,11 +506,55 @@ func save_game() -> void:
 			"audio_music_volume": audio_music_volume,
 			"audio_sfx_volume": audio_sfx_volume,
 			"max_kills": max_kills,
-			"max_time": max_time
+			"max_time": max_time,
+			"best_run_stats": best_run_stats,
+			"total_stats": total_stats
 		}
 		file.store_string(JSON.stringify(data))
 
+func update_stats_at_end_of_run(time: float, run_kills: int, run_boss_kills: int, level: int, shards: int) -> void:
+	# Update Total Stats
+	total_stats["games_played"] += 1
+	total_stats["time_played"] += time
+	total_stats["kills"] += run_kills
+	total_stats["boss_kills"] += run_boss_kills
+	total_stats["deaths"] += 1 # Called on game over
+	total_stats["shards_collected"] += shards
+	total_stats["damage_dealt"] += damage_dealt
+	total_stats["distance_traveled"] += distance_traveled
+	total_stats["potions_consumed"] += potions_consumed
+	total_stats["dashes_made"] += dashes_made
+	
+	# Update Best Run Stats
+	if run_kills > best_run_stats.get("kills", 0):
+		best_run_stats["kills"] = run_kills
+	if time > best_run_stats.get("time", 0.0):
+		best_run_stats["time"] = time
+	if run_boss_kills > best_run_stats.get("boss_kills", 0):
+		best_run_stats["boss_kills"] = run_boss_kills
+	if level > best_run_stats.get("level", 1):
+		best_run_stats["level"] = level
+	if shards > best_run_stats.get("shards", 0):
+		best_run_stats["shards"] = shards
+	if max_kills_per_minute_run > best_run_stats.get("kills_per_min", 0):
+		best_run_stats["kills_per_min"] = max_kills_per_minute_run
+		
+	# Legacy support
+	max_kills = best_run_stats["kills"]
+	max_time = best_run_stats["time"]
+	
+	save_game()
+
+func process_kill_rate(delta: float) -> void:
+	minute_timer += delta
+	if minute_timer >= 60.0:
+		if kills_this_minute > max_kills_per_minute_run:
+			max_kills_per_minute_run = kills_this_minute
+		kills_this_minute = 0
+		minute_timer = 0.0
+
 func load_game() -> void:
+
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	
@@ -423,7 +575,23 @@ func load_game() -> void:
 			audio_sfx_volume = data.get("audio_sfx_volume", 1.0)
 			max_kills = int(data.get("max_kills", 0))
 			max_time = float(data.get("max_time", 0.0))
+			
+			var saved_best = data.get("best_run_stats", {})
+			if saved_best:
+				for key in saved_best:
+					best_run_stats[key] = saved_best[key]
+			else:
+				# Migration from old format
+				best_run_stats["kills"] = max_kills
+				best_run_stats["time"] = max_time
+				
+			var saved_total = data.get("total_stats", {})
+			if saved_total:
+				for key in saved_total:
+					total_stats[key] = saved_total[key]
+					
 			TranslationServer.set_locale(current_language)
+
 
 func unlock_talent(talent_id: String, cost: int) -> bool:
 	if talents.has(talent_id):

@@ -13,12 +13,14 @@ config_version=5
 config/name="Grim Depths"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
+config/icon="uid://cxaawppt5lyau"
 
 [autoload]
 
 GameManager="*res://scripts/autoload/game_manager.gd"
 ObjectPool="*res://scripts/autoload/object_pool.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
+UIEffects="*res://scripts/autoload/ui_effects.gd"
 
 [display]
 

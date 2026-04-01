@@ -47,6 +47,8 @@ var _dash_btn: Button
 var _pause_btn: Button
 
 func _ready() -> void:
+	# Ensure UI responds when paused
+	$UI.process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_game()
 	_connect_signals()
 	_spawn_player()
@@ -211,6 +213,10 @@ func _on_game_timer_timeout() -> void:
 	game_time += 1.0
 	_update_time_display()
 	_update_kill_display()
+	
+	# Update kill rate metrics
+	GameManager.process_kill_rate(1.0)
+
 
 func _update_time_display() -> void:
 	var minutes := int(game_time) / 60
@@ -335,17 +341,24 @@ func _on_game_over() -> void:
 	var time_str = "%02d:%02d" % [minutes, seconds]
 	var player_lvl = _player.level if _player else 1
 	var kills_count = GameManager.kills
+	var boss_kills_count = GameManager.boss_kills
+	
+	# Вычисляем награды
+	var souls_earned = GameManager.gain_run_rewards(game_time, kills_count, boss_kills_count, player_lvl)
 	
 	# Красивое форматирование результатов (используем BBCode)
 	result_stats_label.text = "[center][font_size=28][b]%s[/b][/font_size]\n\n" % tr("RESULTS:")
 	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%s[/b]\n" % [tr("Survival Time:"), time_str]
 	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b]\n" % [tr("Player Level:"), player_lvl]
-	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b][/center]" % [tr("Total Kills:"), kills_count]
+	result_stats_label.text += "[color=#aaaaaa]%s[/color] [b]%d[/b]\n" % [tr("Total Kills:"), kills_count]
+	result_stats_label.text += "[color=#ffcc00]%s[/color] [font_size=22][b]%d[/b][/font_size][/center]" % [tr("Soul Shards Earned:"), souls_earned]
 	
-	# Update Records
+	# Update Records and Stats
 	GameManager.update_records(game_time, kills_count)
+	GameManager.update_stats_at_end_of_run(game_time, kills_count, boss_kills_count, player_lvl, souls_earned)
 	
 	# Стилизация и анимация
+
 	_style_premium_panel(game_over_panel)
 	game_over_panel.modulate.a = 0.0
 	game_over_panel.scale = Vector2(0.9, 0.9)
@@ -449,10 +462,11 @@ func _setup_mobile_controls() -> void:
 	_pause_btn.focus_mode = Control.FOCUS_NONE
 	_pause_btn.action_mode = Button.ACTION_MODE_BUTTON_PRESS
 	_pause_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_pause_btn.pressed.connect(func(): _toggle_pause())
-	ui_layer.add_child(_pause_btn)
-	
 	_apply_mobile_settings()
+	# Update positions on window resize
+	if not get_viewport().size_changed.is_connected(_apply_mobile_settings):
+		get_viewport().size_changed.connect(_apply_mobile_settings)
+
 
 func _on_mobile_settings_changed() -> void:
 	_apply_mobile_settings()
@@ -528,8 +542,12 @@ func resume_game() -> void:
 func open_settings() -> void:
 	var settings = load("res://scenes/ui/settings_menu.tscn").instantiate()
 	pause_panel.visible = false
-	settings.back_pressed.connect(func(): if get_tree().paused: pause_panel.visible = true)
+	settings.back_pressed.connect(func(): 
+		if get_tree().paused: 
+			pause_panel.visible = true
+	)
 	ui_layer.add_child(settings)
+
 
 ## Получить контейнер для динамических объектов
 func get_entities_container() -> Node2D:

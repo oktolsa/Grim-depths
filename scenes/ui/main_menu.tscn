@@ -1,30 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://mainmenu001"]
+[gd_scene load_steps=4 format=3 uid="uid://mainmenu001"]
 
 [ext_resource type="Script" path="res://scenes/ui/main_menu.gd" id="1_menu"]
 [ext_resource type="Theme" uid="uid://ui_theme_001" path="res://scenes/ui/ui_theme.tres" id="2_theme"]
-[ext_resource type="Texture2D" path="res://Assets/logopng.png" id="2_logo"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.06, 0.02, 0.02, 1)
-draw_center = true
-border_width_left = 0
-border_width_top = 0
-border_width_right = 0
-border_width_bottom = 0
-corner_detail = 1
-shadow_color = Color(0, 0, 0, 1)
-shadow_size = 0
-anti_aliasing = false
-
-[sub_resource type="Gradient" id="Gradient_bg"]
-offsets = PackedFloat32Array(0, 0.7, 1)
-colors = PackedColorArray(0.15, 0.02, 0.02, 1, 0.05, 0.01, 0.01, 1, 0.02, 0, 0, 1)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_bg"]
-gradient = SubResource("Gradient_bg")
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 1)
+[ext_resource type="Texture2D" path="res://Assets/Background.png" id="3_bg"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -43,21 +21,40 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = SubResource("GradientTexture2D_bg")
+texture = ExtResource("3_bg")
 expand_mode = 1
+stretch_mode = 6
 
-[node name="MenuBox" type="Panel" parent="."]
+[node name="VideoPlayerOrigin" type="VideoStreamPlayer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -350.0
-offset_right = 300.0
-offset_bottom = 350.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+expand = true
+mouse_filter = 2
+
+[node name="VideoPlayerAfter" type="VideoStreamPlayer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand = true
+visible = false
+mouse_filter = 2
+
+[node name="MenuBox" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 150.0
+offset_top = -350.0
+offset_right = 750.0
+offset_bottom = 350.0
 grow_vertical = 2
 
 [node name="ContentContainer" type="VBoxContainer" parent="MenuBox"]
@@ -74,22 +71,10 @@ grow_vertical = 2
 theme_override_constants/separation = 35
 alignment = 1
 
-[node name="LogoContainer" type="CenterContainer" parent="MenuBox/ContentContainer"]
-layout_mode = 2
-
-[node name="Logo" type="TextureRect" parent="MenuBox/ContentContainer/LogoContainer"]
-texture_filter = 2
-texture_repeat = 1
-custom_minimum_size = Vector2(400, 180)
-layout_mode = 2
-texture = ExtResource("2_logo")
-expand_mode = 1
-stretch_mode = 5
-
 [node name="TitleLabel" type="Label" parent="MenuBox/ContentContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 54
+theme_override_font_sizes/font_size = 90
 text = "GRIM DEPTHS"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -109,6 +94,11 @@ visible = false
 custom_minimum_size = Vector2(0, 65)
 layout_mode = 2
 text = "CHARACTER TALENTS"
+
+[node name="StatisticsButton" type="Button" parent="MenuBox/ContentContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 65)
+layout_mode = 2
+text = "STATISTICS"
 
 [node name="SettingsButton" type="Button" parent="MenuBox/ContentContainer/ButtonsContainer"]
 custom_minimum_size = Vector2(0, 65)
@@ -136,42 +126,10 @@ theme_override_font_sizes/font_size = 26
 text = "Soul Shards: 0"
 horizontal_alignment = 2
 
-[node name="RecordFrame" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 40.0
-offset_top = -180.0
-offset_right = 320.0
-offset_bottom = -40.0
-grow_vertical = 0
-
-[node name="VBox" type="VBoxContainer" parent="RecordFrame"]
-layout_mode = 2
-theme_override_constants/separation = 5
-alignment = 1
-
-[node name="BestLabel" type="Label" parent="RecordFrame/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 22
-text = "BEST RECORD:"
-horizontal_alignment = 1
-
-[node name="RecordStats" type="RichTextLabel" parent="RecordFrame/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-bbcode_enabled = true
-text = "[center][color=#aaaaaa]Kills:[/color] 0
-[color=#aaaaaa]Time:[/color] 00:00[/center]"
-fit_content = true
-scroll_active = false
-
 [connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/PlayButton" to="." method="_on_play_pressed"]
 [connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/TalentsButton" to="." method="_on_talents_pressed"]
+[connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/StatisticsButton" to="." method="_on_statistics_pressed"]
 [connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/SettingsButton" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="MenuBox/ContentContainer/ButtonsContainer/ExitButton" to="." method="_on_exit_pressed"]
+
 

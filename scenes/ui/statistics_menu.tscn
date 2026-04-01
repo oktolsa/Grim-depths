@@ -1,0 +1,92 @@
+[gd_scene load_steps=2 format=3 uid="uid://statistics_menu_001"]
+
+[ext_resource type="Script" path="res://scenes/ui/statistics_menu.gd" id="1_script"]
+
+[node name="StatisticsMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -400.0
+offset_right = 350.0
+offset_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(700, 800)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 30.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+
+[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "STATISTICS"
+horizontal_alignment = 1
+
+[node name="TabContainer" type="TabContainer" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/side_margin = 10
+
+[node name="ScrollBest" type="ScrollContainer" parent="Panel/VBoxContainer/TabContainer"]
+layout_mode = 2
+
+[node name="BestStatsList" type="VBoxContainer" parent="Panel/VBoxContainer/TabContainer/ScrollBest"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="ScrollTotal" type="ScrollContainer" parent="Panel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="TotalStatsList" type="VBoxContainer" parent="Panel/VBoxContainer/TabContainer/ScrollTotal"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="BackButton" type="Button" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_direction = 1
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "BACK"
+
+[connection signal="pressed" from="Panel/VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]

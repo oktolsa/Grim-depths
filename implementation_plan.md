@@ -1,51 +1,39 @@
-# Game Improvement Plan (Grim Depths)
+# Grim Depths Alpha Roadmap
 
-This plan focuses on optimizing the game for mobile devices, improving gameplay balance, and adding variety to ensure a more engaging experience.
+Plan for improvements and new features required for a pleasant gameplay experience and Alpha mobile release.
+
+## User Review Required
+
+> [!IMPORTANT]
+> The "Talents" system requires a UI implementation to make the meta-currency (Soul Shards) useful.
+> We should decide on the "Win Condition" - is it a timer (e.g., 10 minutes) or a specific boss defeat?
 
 ## Proposed Changes
 
-### 1. Performance Optimization (Mobile-Focused)
-To handle hundreds of entities on mobile, we need to minimize physics overhead and object instantiation.
+### Meta-Progression
+- **[NEW] [talents_menu.tscn](file:///d:/Project/grim-depths/Grim-depths/scenes/ui/talents_menu.tscn)**: A new menu to spend Soul Shards on permanent buffs (HP, Speed, Aura power).
+- **[MODIFY] [main_menu.gd](file:///d:/Project/grim-depths/Grim-depths/scenes/ui/main_menu.gd)**: Connect the "Character Talents" button to the new menu.
 
-#### [NEW] [object_pool.gd](file:///d:/Project/grim-depths/scripts/autoload/object_pool.gd)
-- Implement a global object pooling system for `ExperienceGem` and `Enemy` instances.
-- Pre-instantiate common entities to avoid frame drops during gameplay.
+### Enemy Variety & AI
+- **[NEW] [charger_enemy.gd](file:///d:/Project/grim-depths/Grim-depths/scenes/enemy/charger_enemy.gd)**: A new enemy type that telegraphs and then dashes towards the player.
+- **[MODIFY] [enemy_spawner.gd](file:///d:/Project/grim-depths/Grim-depths/scenes/spawner/enemy_spawner.gd)**: Integrate the new enemy type into the spawn waves based on time.
 
-#### [MODIFY] [enemy.gd](file:///d:/Project/grim-depths/scenes/enemy/enemy.gd)
-- Replace `move_and_slide()` with simple `global_position` updates for standard enemies to reduce physics calculations.
-- Implement "hibernation" logic: stop processing logic for enemies far from the player.
+### Gameplay & Balance
+- **[MODIFY] [game_manager.gd](file:///d:/Project/grim-depths/Grim-depths/scripts/autoload/game_manager.gd)**: Add more upgrade types (Crit Chance, Regeneration).
+- **[MODIFY] [player.gd](file:///d:/Project/grim-depths/Grim-depths/scenes/player/player.gd)**: Implement basic health regeneration logic if the upgrade is picked.
 
-#### [MODIFY] [experience_gem.gd](file:///d:/Project/grim-depths/scenes/experience_gem/experience_gem.gd)
-- Integrate with `ObjectPool` to avoid constant `queue_free()` and `instantiate()`.
-
----
-
-### 2. Gameplay Variety & Balance
-Enhance the "survivors-like" core loop with more options and better data management.
-
-#### [NEW] [upgrade_data.gd](file:///d:/Project/grim-depths/scripts/resources/upgrade_data.gd)
-- Create a `Resource` type for upgrades to make them data-driven instead of hardcoded in `GameManager`.
-
-#### [NEW] [projectile_weapon.gd](file:///d:/Project/grim-depths/scenes/player/weapons/projectile_weapon.gd)
-- Add a new weapon type that fires projectiles at the nearest enemy, complementing the passive Aura.
-
-#### [NEW] [slime.tscn](file:///d:/Project/grim-depths/scenes/enemy/slime/slime.tscn)
-- Add a new "Slime" enemy that splits into smaller slimes on death, increasing tactical variety.
-
----
-
-### 3. Balance Refinement
-#### [MODIFY] [game_manager.gd](file:///d:/Project/grim-depths/scripts/autoload/game_manager.gd)
-- Refactor `get_random_upgrades` to use the new `UpgradeData` resources.
-- Adjust difficulty scaling to be "wave-based" or have progressive spikes rather than pure linear growth.
+### Game Loop & Polish
+- **[MODIFY] [main.gd](file:///d:/Project/grim-depths/Grim-depths/scenes/main/main.gd)**: Implement a survival timer (10:00) that triggers a "Victory" state.
+- **[NEW] [victory_screen.tscn](file:///d:/Project/grim-depths/Grim-depths/scenes/ui/victory_screen.tscn)**: A premium-styled screen shown upon successful survival.
+- **[NEW] [death_particles.tscn](file:///d:/Project/grim-depths/Grim-depths/scenes/vfx/death_particles.tscn)**: Simple GPU particles for enemy death feedback.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run the game and monitor FPS using Godot's built-in profiler (Target: 60 FPS with 100+ enemies).
-- Verify `ObjectPool` functionality by checking `EntityContainer` child count consistency.
+- No automated tests currently exist. I will verify via manual playtesting using the Godot editor's "Run" feature.
 
 ### Manual Verification
-- **Stress Test**: Play for 5-10 minutes to ensure difficulty scaling feels natural and the mobile UI remains responsive.
-- **Weapon Testing**: Ensure the new Projectile weapon targets enemies correctly and its upgrades (speed, damage) work as expected.
-- **Enemy Variety**: Confirm the Slime enemy splits correctly and provides experience gems.
+- **Talents**: Buy an upgrade in the menu, restart the game, and verify the stat is applied to the player.
+- **Enemies**: Observe the "Charger" enemy's telegraph and dash behavior.
+- **Win Condition**: Set the timer to 10 seconds for testing and verify the Victory screen appears.
+- **Mobile**: Use the editor's "Emulate Touch" feature to verify the new UI elements are reachable and sized correctly for mobile.

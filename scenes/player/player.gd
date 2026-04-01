@@ -49,6 +49,8 @@ var collection_shape: CollisionShape2D
 
 var _shake_strength: float = 0.0
 var _shake_tween: Tween
+var _last_position: Vector2
+
 
 func _ready() -> void:
 	hp = max_hp
@@ -60,6 +62,8 @@ func _ready() -> void:
 	health_changed.emit(hp, max_hp)
 	experience_changed.emit(current_exp, target_exp)
 	GameManager.register_player(self)
+	_last_position = global_position
+
 
 func _setup_experience_collector() -> void:
 	experience_collector = Area2D.new()
@@ -112,6 +116,12 @@ func _physics_process(_delta: float) -> void:
 		
 	_handle_movement()
 	_update_animations()
+	
+	# Track distance traveled
+	var dist = global_position.distance_to(_last_position)
+	GameManager.distance_traveled += dist
+	_last_position = global_position
+
 
 func _handle_movement() -> void:
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -122,6 +132,8 @@ func _handle_movement() -> void:
 func _start_dash() -> void:
 	_is_dashing = true
 	dash_timer.start()
+	GameManager.dashes_made += 1
+
 
 func _on_dash_timer_timeout() -> void:
 	_is_dashing = false
@@ -193,6 +205,8 @@ func _die() -> void:
 func heal(amount: float) -> void:
 	hp = min(hp + amount, max_hp)
 	health_changed.emit(hp, max_hp)
+	GameManager.potions_consumed += 1
+
 
 ## Добавляет опыт игроку и проверяет повышение уровня
 func add_experience(amount: int) -> void:

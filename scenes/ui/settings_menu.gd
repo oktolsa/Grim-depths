@@ -42,6 +42,8 @@ func _connect_signals() -> void:
 			# Add margin for better layout if it's a VBox
 			if parent is VBoxContainer:
 				customize_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			UIEffects.setup_button(customize_btn)
+
 
 func _setup_ui() -> void:
 	# Блокируем сигналы чтобы избежать рекурсии при заполнении
@@ -78,11 +80,28 @@ func _setup_ui() -> void:
 	
 	# Fix CheckButton overlap
 	if swap_button:
-		# Use singular 'constant' instead of 'constants'
-		swap_button.add_theme_constant_override("h_separation", 35)
+		# Use stable layout: Separation and text alignment
+		swap_button.add_theme_constant_override("h_separation", 20)
 		swap_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		swap_button.text = tr("Mirrored")
+
+	
+	# Apply Premium Stylings
+	var panel = find_child("Panel")
+	if panel is Panel:
+		UIEffects.style_premium_panel(panel)
+	
+	var back_btn = find_child("BackButton")
+	if back_btn is Button:
+		UIEffects.setup_button(back_btn)
+		if not back_btn.pressed.is_connected(_on_back_pressed):
+			back_btn.pressed.connect(_on_back_pressed)
+			
+	UIEffects.fade_in(self)
+	if panel: UIEffects.slide_up(panel)
 	
 	set_block_signals(old_block)
+
 
 func _localize_ui_elements() -> void:
 	# Заголовок
@@ -119,6 +138,12 @@ func _localize_ui_elements() -> void:
 		tabs.set_tab_title(0, tr("Audio"))
 		tabs.set_tab_title(1, tr("Controls"))
 		tabs.set_tab_title(2, tr("Language"))
+	
+	# Update programmatically created button if it exists
+	var customize_btn = find_child("CustomizeLayoutButton", true, false)
+	if customize_btn:
+		customize_btn.text = tr("CUSTOMIZE LAYOUT")
+
 
 func _on_music_volume_changed(value: float) -> void:
 	if not is_blocking_signals():
